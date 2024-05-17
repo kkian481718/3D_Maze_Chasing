@@ -1,6 +1,6 @@
 object Form1: TForm1
-  Left = 364
-  Top = 116
+  Left = 442
+  Top = 137
   BorderStyle = bsDialog
   Caption = 'D&D'
   ClientHeight = 615
@@ -226,6 +226,14 @@ object Form1: TForm1
     Height = 121
     Caption = 'Button6'
     TabOrder = 10
+  end
+  object Button7: TButton
+    Left = 16
+    Top = 496
+    Width = 75
+    Height = 25
+    Caption = #23617#30524
+    TabOrder = 11
   end
   object Timer1: TTimer
     Interval = 50
