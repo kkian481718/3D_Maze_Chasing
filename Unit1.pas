@@ -44,9 +44,9 @@ type
     procedure Button3Click(Sender: TObject);
     procedure ComboBox1Select(Sender: TObject);
     function GetIPFromHost(var HostName, IPaddr, WSAErr: string): Boolean;
+    procedure conUISetVisible(bool: Boolean);
     procedure Button4Click(Sender: TObject);
-    procedure UDPSUDPRead(Sender: TObject; AData: TStream;
-      ABinding: TIdSocketHandle);
+    procedure UDPSUDPRead(Sender: TObject; AData: TStream; ABinding: TIdSocketHandle);
   private
     { Private declarations }
   public
@@ -88,10 +88,17 @@ var
   twoD_Bmap: TBitmap; //2D地圖用到的點陣圖
 
   // 一些變數
-  LX, LY, Dir: Byte;
+  LX, LY, Dir: Byte;      // 我的位置
   Rect_B, Rect_M: TRect;
-  con_mode: Byte; // 連接模式
-  con_count: ShortInt;
+
+  // 連線用的變數
+  con_mode: Byte;         // 連接模式
+  con_count: ShortInt;    // 伺服器中的人數 (只有Server會存)
+  con_loc: array of ShortInt; // 所有玩家的位置
+  con_num: ShortInt;      // 我的編號 (Server = 0)
+
+  // 抓本機IP用的變數
+  Host, IP, Err: string;
 
 implementation
 
@@ -117,7 +124,14 @@ begin
   //初始把UDP關閉
   UDPC.Active := false;
   UDPS.Active := false;
+  
+  //初始化連線變數
   con_mode := 0; //0:單人、1:Client、2:Server
+  con_count := 0;
+  setlength(con_loc, 2);
+  con_loc[0] := 1;
+  con_loc[1] := 1;
+  con_num := 0;
 
   //把四張牌蓋起來
   Card1.Showdeck := true;
@@ -181,7 +195,7 @@ begin
 
     1: begin // 如果朝向南邊
       for Y := -4 to 0 do
-       for X := -2 to 2 do
+        for X := -2 to 2 do
           if (My+Y >= 0) and (Mx+X >= 0) and (Mx+X <= Hmax) then Dmap[X+2, Y+4] := Lmap[Mx+X, My+Y];
     end;
 
@@ -193,7 +207,7 @@ begin
 
     3: begin // 如果朝向北邊
       for Y := 4 downto 0 do
-       for X := 2 downto -2 do
+        for X := 2 downto -2 do
           if (My+Y <= Hmax) and (Mx+X >= 0) and (Mx+X <= Hmax) then Dmap[2-X, 4-Y] := Lmap[Mx+X, My+Y];
     end;
   end;
@@ -290,40 +304,56 @@ begin
       if Lmap[X, Y] = 1 then Bmap.Canvas.Rectangle(X*MMW, Y*MMW, (X+1)*MMW, (Y+1)*MMW);
     end;
 
+  // 畫玩家位置
   Bmap.Canvas.Pen.Color := $ff00ff;
   Bmap.Canvas.Brush.Color := $ff00ff;
-  // 畫玩家位置
   Bmap.Canvas.Rectangle(Mx*MMW, My*MMW, (Mx+1)*MMW, (My+1)*MMW);
-
-  // 畫其他玩家位置
-  for i:=0 to Length(con_loc) do
-  begin
-    X := con_loc[i];
-    Y := con_loc[i+1];
-    Bmap.Canvas.Rectangle(X*MMW, Y*MMW, (X+1)*MMW, (Y+1)*MMW);
-    i := i+2;
-  end;
 
   // 畫玩家朝向
   case Md of
-      // 東
-      0: Bmap.Canvas.Rectangle((Mx+1)*MMW +2, My*MMW +2, (Mx+1)*MMW +4, (My+1)*MMW -2); 
-      
-      // 北
-      1: Bmap.Canvas.Rectangle(Mx*MMW +2, My*MMW -2, (Mx+1)*MMW -2, My*MMW -4);
-      
-      // 西
-      2: Bmap.Canvas.Rectangle(Mx*MMW -2, My*MMW +2, Mx*MMW -4, (My+1)*MMW -2);
+    // 東
+    0: Bmap.Canvas.Rectangle((Mx+1)*MMW +2, My*MMW +2, (Mx+1)*MMW +4, (My+1)*MMW -2); 
+    
+    // 北
+    1: Bmap.Canvas.Rectangle(Mx*MMW +2, My*MMW -2, (Mx+1)*MMW -2, My*MMW -4);
+    
+    // 西
+    2: Bmap.Canvas.Rectangle(Mx*MMW -2, My*MMW +2, Mx*MMW -4, (My+1)*MMW -2);
 
-      // 南
-      3: Bmap.Canvas.Rectangle(Mx*MMW +2, (My+1)*MMW +2, (Mx+1)*MMW -2, (My+1)*MMW +4);
-    end;  
+    // 南
+    3: Bmap.Canvas.Rectangle(Mx*MMW +2, (My+1)*MMW +2, (Mx+1)*MMW -2, (My+1)*MMW +4);
+  end; 
+
+  // 畫其他玩家位置
+  Bmap.Canvas.Pen.Color := $00ffff;
+  Bmap.Canvas.Brush.Color := $00ffff;
+  i := 0;
+  while i < Length(con_loc) do
+  begin
+    if i = con_num then
+    begin
+      // 不用畫自己的位置
+      i := i + 2;
+      continue;
+    end else
+    begin
+      X := con_loc[i];
+      Y := con_loc[i+1];
+      Bmap.Canvas.Rectangle(X*MMW, Y*MMW, (X+1)*MMW, (Y+1)*MMW);
+      i := i + 2;
+    end;
+  end;
 end;
 
 // 前進
 procedure TForm1.Button1Click(Sender: TObject);
 begin
   Dir := Dir or 16;
+
+  con_loc[con_num*2] := LX;
+  con_loc[con_num*2 + 1] := LY;
+
+  UDPC.send('L' + inttostr(con_num) + 'X' + inttostr(LX) + 'Y' + inttostr(LY));
 end;
 
 // 左轉
@@ -345,45 +375,39 @@ begin
   twoD_Bmap.free;
 end;
 
+// 選擇網路模式
 procedure TForm1.ComboBox1Select(Sender: TObject);
-var
-    Host, IP, Err: string;
 begin
   if ComboBox1.ItemIndex = 0 then
   begin
     Form1.Caption := GAME_NAME + '：單人模式';
     con_mode := 0;
+    conUISetVisible(false); // 隱藏IP、PORT、連線按鈕組
+  end
+  else begin
+    
+    conUISetVisible(true); // 顯示IP、PORT、連線按鈕組
 
-    // 隱藏IP、PORT、連線按鈕組
-    Label1.Visible := false;
-    Label2.Visible := false;
-    Edit1.Visible := false;
-    Edit2.Visible := false;
-    Button4.Visible := false;
-    Button5.Visible := false;
-  end else
-  begin
-    // 顯示IP、PORT、連線按鈕組
-    Label1.Visible := true;
-    Label2.Visible := true;
-    Edit1.Visible := true;
-    Edit2.Visible := true;
-    Button4.Visible := true;
-    Button5.Visible := true;
+    // 嘗試得到自己的IP
+    IP := '';
+    if GetIPFromHost(Host, IP, Err) then
+    begin
+      Edit1.Text := IP;
+    end else
+      MessageDlg(Err, mtError, [mbOk], 0);
 
-    if ComboBox1.ItemIndex = 1 then
+    if (ComboBox1.ItemIndex = 1) and (IP <> '') then
     begin
       Form1.Caption := GAME_NAME + '：多人模式（Client｜未連線）';
       con_mode := 1;
 
-      Edit1.Text := '';
       Edit1.Enabled := true;
       Edit2.Enabled := true;
       Button4.Enabled := true;
-      Button5.Enabled := true;
+      Button5.Enabled := false;
       Button4.Caption := '連線！';
     end else
-    if ComboBox1.ItemIndex = 2 then
+    if (ComboBox1.ItemIndex = 2) and (IP <> '') then
     begin
       Form1.Caption := GAME_NAME + '：多人模式（Server｜未創建）';
       con_mode := 2;
@@ -466,7 +490,6 @@ begin
   if copy(s, 0, 1) = 'P' then
   begin
 
-    
   end;
   
   case con_mode of
@@ -515,7 +538,7 @@ begin
       else if copy(s, 0, 1) = 'C' then
       begin
         con_count := con_count + 1;
-        setlength(con_loc, con_count); // 重新設定con_loc陣列長度
+        setlength(con_loc, con_count*2); // 重新設定con_loc陣列長度
         con_loc[con_count-1] := 1;
         con_loc[con_count] := 1;
         
@@ -581,53 +604,6 @@ begin
       end;
     Dispose(HName);
     WSACleanup;
-end;
-
-procedure TForm1.Button4Click(Sender: TObject);
-begin
-  case con_mode of
-  //Client嘗試連線
-    1:
-    begin
-      Form1.Caption := GAME_NAME + '：多人模式（Client｜正在連線至主機...）';
-
-      Edit1.Enabled := false;
-      Edit2.Enabled := false;
-      UDPC.Host := Edit1.Text;
-      UDPC.Port := strtoint(Edit2.Text);
-      UDPC.Send('C'); // 送出C嘗試連接，並得到一個序號
-    end;
-
-    //Server嘗試建立
-    2:
-    begin
-      Form1.Caption := GAME_NAME + '：多人模式（Server｜正在嘗試建立新伺服器...）';
-      Edit2.Enabled := false;
-      UDPS.DefaultPort := strtoint(Edit2.Text);
-      UDPS.Active := true;
-      
-      Form1.Caption := GAME_NAME + '：多人模式（Server｜就緒）';
-    end;
-  end;
-
-end;
-
-// 1.接收對方X、Y 2.接收對方出的牌'P
-// C: 還要接收 對方給的序號 'N[序號]'
-// S: 還要接收 新連線 'C[IP]'
-procedure TForm1.UDPSUDPRead(Sender: TObject; AData: TStream; ABinding: TIdSocketHandle);
-var
-  s: string;
-  len: integer;
-begin
-  len := AData.Size;
-  setlength(s, len);
-  Adata.Read(s[1], len);
-  
-  if copy(s, 0, 1) = 'C' then
-  begin
-    UDPC.send('N');
-  end;
 end;
 
 end.

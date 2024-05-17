@@ -233,7 +233,7 @@ object Form1: TForm1
     Width = 75
     Height = 25
     Caption = #23617#30524
-    TabOrder = 11
+    TabOrder = 12
   end
   object Memo1: TMemo
     Left = 400
