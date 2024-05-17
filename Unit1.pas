@@ -33,6 +33,7 @@ type
     Button5: TButton;
     Button6: TButton;
     Button7: TButton;
+    Memo1: TMemo;
     procedure FormCreate(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
@@ -272,7 +273,7 @@ end;
 
 procedure TForm1.Make2D(Mx, My, Md: Byte; Bmap: TBitmap);
 var
-  X, Y: ShortInt;
+  X, Y, i: ShortInt;
 begin
   Bmap.Canvas.Pen.Width := 1;
   Bmap.Canvas.Pen.Color := $ffff00;
@@ -293,6 +294,15 @@ begin
   Bmap.Canvas.Brush.Color := $ff00ff;
   // 畫玩家位置
   Bmap.Canvas.Rectangle(Mx*MMW, My*MMW, (Mx+1)*MMW, (My+1)*MMW);
+
+  // 畫其他玩家位置
+  for i:=0 to Length(con_loc) do
+  begin
+    X := con_loc[i];
+    Y := con_loc[i+1];
+    Bmap.Canvas.Rectangle(X*MMW, Y*MMW, (X+1)*MMW, (Y+1)*MMW);
+    i := i+2;
+  end;
 
   // 畫玩家朝向
   case Md of
@@ -366,6 +376,7 @@ begin
       Form1.Caption := GAME_NAME + '：多人模式（Client｜未連線）';
       con_mode := 1;
 
+      Edit1.Text := '';
       Edit1.Enabled := true;
       Edit2.Enabled := true;
       Button4.Enabled := true;
@@ -382,6 +393,45 @@ begin
       Button4.Enabled := true;
       Button5.Enabled := false;
       Button4.Caption := '建立伺服器！';
+    end;
+  end;
+end;
+
+// 按下建立連線
+procedure TForm1.Button4Click(Sender: TObject);
+begin
+
+  Edit1.Enabled := false;
+  Edit2.Enabled := false;
+  Button4.Enabled := false;
+  Button5.Enabled := false;
+  ComboBox1.Enabled := false;
+
+  case con_mode of
+    1: //1. Client 嘗試連線
+    begin
+      Form1.Caption := GAME_NAME + '：多人模式（Client｜正在連線至主機...）';
+
+      UDPC.Host := Edit1.Text;
+      UDPC.Port := strtoint(Edit2.Text);
+
+      UDPS.DefaultPort := 8787;
+      UDPS.Active := true;
+
+      Form1.Caption := GAME_NAME + '：多人模式（Client｜正在傳送你的IP：' + IP + '...）';
+      UDPC.Send('C' + IP); // 送出C[IP]嘗試連接，並得到一個序號
+    end;
+
+    2: //1. 嘗試建立 Server
+    begin
+      Form1.Caption := GAME_NAME + '：多人模式（Server｜正在嘗試建立新伺服器...）';
+
+      UDPS.DefaultPort := strtoint(Edit2.Text);
+      UDPS.Active := true;
+      con_count := 0;
+      
+      Form1.Caption := GAME_NAME + '：多人模式（Server｜就緒）';
+      Button5.Enabled := true;
       
       // 嘗試得到自己的IP
       if GetIPFromHost(Host, IP, Err) then
@@ -396,6 +446,99 @@ begin
     end;
   end;
 
+end;
+
+// UDPS接收資訊
+procedure TForm1.UDPSUDPRead(Sender: TObject; AData: TStream; ABinding: TIdSocketHandle);
+var
+  s, r: string;
+  len: integer;
+begin
+  // > 下載資料 <
+  len := AData.Size;
+  setlength(s, len);
+  Adata.Read(s[1], len);
+
+  memo1.Lines.add(s);
+
+  // > 解析資料 <
+  // C&S: 接收出牌結果
+  if copy(s, 0, 1) = 'P' then
+  begin
+
+    
+  end;
+  
+  case con_mode of
+    1: // Client
+    begin
+      //TODO：
+      // C: 接收地圖更新 M[地圖資料]
+      if copy(s, 0, 1) = 'M' then
+      begin
+        Form1.Caption := GAME_NAME + '：多人模式（Client｜正在更新地圖 [' + inttostr(con_num) + ']）';
+        
+        // TODO：更新con_loc[][]
+
+        Form1.Caption := GAME_NAME + '：多人模式（Client｜已連線！[' + inttostr(con_num) + ']）';
+      end
+
+      // C: 接收 對方給的序號 'N[序號]'
+      else if copy(s, 0, 1) = 'N' then
+      begin
+        con_num := strtoint(copy(s, 2, 10000));
+        Form1.Caption := GAME_NAME + '：多人模式（Client｜更新資料中... [' + inttostr(con_num) + ']）';
+      end;
+    end;
+
+    2: // Server
+    begin
+      // S: 收到要求發送地圖
+      if copy(s, 0, 1) = 'M' then
+      begin
+        // 1. Array to str
+        if Length(con_loc)>0 then
+        begin
+          SetString(r, PAnsiChar(@con_loc[0]), Length(con_loc));
+          memo1.Lines.add('M> len(con_loc) ' + inttostr(Length(con_loc)));
+          memo1.Lines.add('M> con_loc ' + r);
+        end else
+        begin r := ''; end;
+
+        // 2. send
+        UDPC.Host := copy(s, 2, 10000);
+        UDPC.Port := 8787;
+        UDPC.send('M' + r);
+      end
+
+      // S: 接收 新連線 'C[IP]'
+      else if copy(s, 0, 1) = 'C' then
+      begin
+        con_count := con_count + 1;
+        setlength(con_loc, con_count); // 重新設定con_loc陣列長度
+        con_loc[con_count-1] := 1;
+        con_loc[con_count] := 1;
+        
+        UDPC.Host := copy(s, 2, 10000);
+        UDPC.Port := 8787; 
+        memo1.Lines.add('C> HOST ' + UDPC.Host);
+        memo1.Lines.add('C> con_count ' + inttostr(con_count));
+
+        UDPC.send('N' + inttostr(con_count));
+      end;
+    end;
+  end;
+end;
+
+// 顯示/隱藏連線欄
+procedure TForm1.conUISetVisible(bool: Boolean);
+begin
+  Label1.Visible := bool;
+  Label2.Visible := bool;
+  Edit1.Visible := bool;
+  Edit2.Visible := bool;
+  Button4.Visible := bool;
+  Button5.Visible := bool;
 end;
 
 // 得到自己電腦的IP

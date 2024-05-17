@@ -3,7 +3,7 @@ object Form1: TForm1
   Top = 137
   BorderStyle = bsDialog
   Caption = 'D&D'
-  ClientHeight = 615
+  ClientHeight = 614
   ClientWidth = 651
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -235,6 +235,15 @@ object Form1: TForm1
     Caption = #23617#30524
     TabOrder = 11
   end
+  object Memo1: TMemo
+    Left = 400
+    Top = 408
+    Width = 185
+    Height = 153
+    Lines.Strings = (
+      'Memo1')
+    TabOrder = 11
+  end
   object Timer1: TTimer
     Interval = 50
     OnTimer = Timer1Timer
@@ -248,7 +257,7 @@ object Form1: TForm1
   end
   object UDPS: TIdUDPServer
     Bindings = <>
-    DefaultPort = 0
+    DefaultPort = 8787
     OnUDPRead = UDPSUDPRead
     Left = 592
     Top = 80
