@@ -31,6 +31,7 @@ type
     Label2: TLabel;
     Button4: TButton;
     Button5: TButton;
+    Button6: TButton;
     procedure FormCreate(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
@@ -87,7 +88,8 @@ var
   // 一些變數
   LX, LY, Dir: Byte;
   Rect_B, Rect_M: TRect;
-  con_mode: Byte;
+  con_mode: Byte; // 連接模式
+  con_count: ShortInt;
 
 implementation
 
@@ -479,8 +481,9 @@ begin
   Adata.Read(s[1], len);
   
   if copy(s, 0, 1) = 'C' then
-  {
-    UDPC.z}
+  begin
+    UDPC.send('N');
+  end;
 end;
 
 end.
