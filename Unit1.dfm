@@ -219,21 +219,13 @@ object Form1: TForm1
     TabOrder = 9
     Visible = False
   end
-  object Button6: TButton
-    Left = 416
-    Top = 424
-    Width = 123
-    Height = 121
-    Caption = 'Button6'
-    TabOrder = 10
-  end
   object Button7: TButton
     Left = 16
     Top = 496
     Width = 75
     Height = 25
     Caption = #23617#30524
-    TabOrder = 11
+    TabOrder = 10
   end
   object Timer1: TTimer
     Interval = 50
@@ -243,6 +235,7 @@ object Form1: TForm1
   end
   object UDPC: TIdUDPClient
     Port = 0
+    ReceiveTimeout = 10000
     Left = 592
     Top = 48
   end
