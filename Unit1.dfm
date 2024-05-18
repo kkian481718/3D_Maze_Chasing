@@ -1,6 +1,6 @@
 object Form1: TForm1
-  Left = 212
-  Top = 85
+  Left = 364
+  Top = 86
   BorderStyle = bsDialog
   Caption = 'D&D'
   ClientHeight = 613
@@ -237,21 +237,23 @@ object Form1: TForm1
     Visible = False
     OnClick = Button5Click
   end
-  object Button6: TButton
-    Left = 416
-    Top = 424
-    Width = 123
-    Height = 121
-    Caption = 'Button6'
-    TabOrder = 10
-  end
   object Button7: TButton
     Left = 16
     Top = 496
     Width = 75
     Height = 25
-    Caption = #23617#30524
-    TabOrder = 12
+    Caption = #23617#30524'1'
+    TabOrder = 10
+    OnClick = Button7Click
+  end
+  object Button6: TButton
+    Left = 112
+    Top = 496
+    Width = 75
+    Height = 25
+    Caption = #23617#30524'2'
+    TabOrder = 14
+    OnClick = Button6Click
   end
   object Memo1: TMemo
     Left = 392
@@ -262,12 +264,31 @@ object Form1: TForm1
       'Memo1')
     TabOrder = 11
   end
+  object Button8: TButton
+    Left = 304
+    Top = 496
+    Width = 75
+    Height = 25
+    Caption = #23617#30524'4'
+    TabOrder = 12
+    OnClick = Button8Click
+  end
+  object Button9: TButton
+    Left = 208
+    Top = 496
+    Width = 75
+    Height = 25
+    Caption = #23617#30524'3'
+    TabOrder = 13
+    OnClick = Button9Click
+  end
   object UDPC: TIdUDPClient
     Port = 0
     Left = 400
     Top = 552
   end
   object UDPS: TIdUDPServer
+    Active = True
     Bindings = <>
     DefaultPort = 8787
     OnUDPRead = UDPSUDPRead
