@@ -579,7 +579,7 @@ procedure TForm1.disconnect();
 begin
   Timer_con.Enabled := false;
   ComboBox1.ItemIndex := 0;
-  UDPC.Send('D' + con_num);
+  UDPC.Send('D' + inttostr(con_num));
   
   //初始化連線變數
   con_mode := 0; //0:單人、1:Client、2:Server
@@ -697,7 +697,7 @@ begin
     memo1.Lines.add('C> IP ' + UDPC.Host);
     memo1.Lines.add('C> Port ' + inttostr(UDPC.Port));
     memo1.Lines.add('C> con_count ' + inttostr(length(con_IP)-1));
-  end;
+  end
 
   // 5) Server: 接收 玩家離開連線 'D[編號]'
   else if copy(s, 1, 1) = 'D' then
