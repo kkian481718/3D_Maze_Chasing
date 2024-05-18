@@ -236,16 +236,16 @@ object Form1: TForm1
     TabOrder = 12
   end
   object Memo1: TMemo
-    Left = 400
-    Top = 408
-    Width = 185
-    Height = 153
+    Left = 392
+    Top = 400
+    Width = 153
+    Height = 193
     Lines.Strings = (
       'Memo1')
     TabOrder = 11
   end
   object Timer1: TTimer
-    Interval = 50
+    Interval = 100
     OnTimer = Timer1Timer
     Left = 592
     Top = 16

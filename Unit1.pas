@@ -92,10 +92,10 @@ var
   Rect_B, Rect_M: TRect;
 
   // 連線用的變數
-  con_mode: Byte;         // 連接模式
-  con_count: ShortInt;    // 伺服器中的人數 (只有Server會存)
+  con_mode: Byte;             // 連接模式
   con_loc: array of ShortInt; // 所有玩家的位置
-  con_num: ShortInt;      // 我的編號 (Server = 0)
+  con_IP: array of string;    // 所有玩家的IP
+  con_num: ShortInt;          // 我的編號 (Server = 0)
 
   // 抓本機IP用的變數
   Host, IP, Err: string;
@@ -127,7 +127,6 @@ begin
   
   //初始化連線變數
   con_mode := 0; //0:單人、1:Client、2:Server
-  con_count := 0;
   setlength(con_loc, 2);
   con_loc[0] := 1;
   con_loc[1] := 1;
@@ -328,7 +327,7 @@ begin
   Bmap.Canvas.Pen.Color := $00ffff;
   Bmap.Canvas.Brush.Color := $00ffff;
   i := 0;
-  while i < Length(con_loc) do
+  while i <= Length(con_loc) do
   begin
     if i = con_num then
     begin
@@ -382,11 +381,12 @@ begin
   begin
     Form1.Caption := GAME_NAME + '：單人模式';
     con_mode := 0;
-    conUISetVisible(false); // 隱藏IP、PORT、連線按鈕組
+    // 隱藏IP、PORT、連線按鈕組
+    conUISetVisible(false); 
   end
   else begin
-    
-    conUISetVisible(true); // 顯示IP、PORT、連線按鈕組
+    // 顯示IP、PORT、連線按鈕組
+    conUISetVisible(true); 
 
     // 嘗試得到自己的IP
     IP := '';
@@ -396,8 +396,8 @@ begin
     end else
       MessageDlg(Err, mtError, [mbOk], 0);
 
-    if (ComboBox1.ItemIndex = 1) and (IP <> '') then
-    begin
+    if ComboBox1.ItemIndex = 1 then
+    begin 
       Form1.Caption := GAME_NAME + '：多人模式（Client｜未連線）';
       con_mode := 1;
 
@@ -407,7 +407,7 @@ begin
       Button5.Enabled := false;
       Button4.Caption := '連線！';
     end else
-    if (ComboBox1.ItemIndex = 2) and (IP <> '') then
+    if ComboBox1.ItemIndex = 2 then
     begin
       Form1.Caption := GAME_NAME + '：多人模式（Server｜未創建）';
       con_mode := 2;
@@ -452,7 +452,6 @@ begin
 
       UDPS.DefaultPort := strtoint(Edit2.Text);
       UDPS.Active := true;
-      con_count := 0;
       
       Form1.Caption := GAME_NAME + '：多人模式（Server｜就緒）';
       Button5.Enabled := true;
@@ -460,7 +459,6 @@ begin
       // 嘗試得到自己的IP
       if GetIPFromHost(Host, IP, Err) then
       begin
-        //Edit2.Text := Host;
         Edit1.Text := IP;
       end
       else
@@ -475,81 +473,96 @@ end;
 // UDPS接收資訊
 procedure TForm1.UDPSUDPRead(Sender: TObject; AData: TStream; ABinding: TIdSocketHandle);
 var
-  s, r: string;
-  len: integer;
+  s: string;
+  len, i, con_count: integer;
+
+  // 得到玩家新位置用
+  X, Y, num: ShortInt;
+
+  // 把字串分割用
+  temp: TStringList;
+  s_p: PChar;
 begin
   // > 下載資料 <
   len := AData.Size;
   setlength(s, len);
   Adata.Read(s[1], len);
-
-  memo1.Lines.add(s);
+  memo1.Lines.add(s); // DEBUG
 
   // > 解析資料 <
-  // C&S: 接收出牌結果
-  if copy(s, 0, 1) = 'P' then
+  // 1) Client & Server: 接收地圖更新 L[玩家編號]X[座標]Y[座標]
+  if copy(s, 1, 1) = 'L' then
   begin
+    // (得到玩家編號、新的X和Y)
+    temp := TStringList.Create;
+    s_p := PChar(s);
+    ExtractStrings(['L', 'X', 'Y'], [], s_p, temp);
+    num := strtoint(temp[0]); //送出移動訊號的玩家編號
+    X := strtoint(temp[1]);   //新的X值
+    Y := strtoint(temp[2]);   //新的Y值
+    temp.free;
 
-  end;
-  
-  case con_mode of
-    1: // Client
+    // DEBUG
+    memo1.Lines.add('L> num' + inttostr(num));
+    memo1.Lines.add('L> X' + inttostr(X)); 
+    memo1.Lines.add('L> Y' + inttostr(Y));  
+
+    // (更新自己的con_loc[][])
+    con_loc[num*2] := X;
+    con_loc[num*2 + 1] := Y;
+    
+    // 如果是伺服器，要協助轉發訊息
+    if con_mode = 2 then
     begin
-      //TODO：
-      // C: 接收地圖更新 M[地圖資料]
-      if copy(s, 0, 1) = 'M' then
+      for i:=1 to Length(con_IP) do
       begin
-        Form1.Caption := GAME_NAME + '：多人模式（Client｜正在更新地圖 [' + inttostr(con_num) + ']）';
+        if i = num then continue;
         
-        // TODO：更新con_loc[][]
-
-        Form1.Caption := GAME_NAME + '：多人模式（Client｜已連線！[' + inttostr(con_num) + ']）';
-      end
-
-      // C: 接收 對方給的序號 'N[序號]'
-      else if copy(s, 0, 1) = 'N' then
-      begin
-        con_num := strtoint(copy(s, 2, 10000));
-        Form1.Caption := GAME_NAME + '：多人模式（Client｜更新資料中... [' + inttostr(con_num) + ']）';
-      end;
-    end;
-
-    2: // Server
-    begin
-      // S: 收到要求發送地圖
-      if copy(s, 0, 1) = 'M' then
-      begin
-        // 1. Array to str
-        if Length(con_loc)>0 then
-        begin
-          SetString(r, PAnsiChar(@con_loc[0]), Length(con_loc));
-          memo1.Lines.add('M> len(con_loc) ' + inttostr(Length(con_loc)));
-          memo1.Lines.add('M> con_loc ' + r);
-        end else
-        begin r := ''; end;
-
-        // 2. send
-        UDPC.Host := copy(s, 2, 10000);
-        UDPC.Port := 8787;
-        UDPC.send('M' + r);
-      end
-
-      // S: 接收 新連線 'C[IP]'
-      else if copy(s, 0, 1) = 'C' then
-      begin
-        con_count := con_count + 1;
-        setlength(con_loc, con_count*2); // 重新設定con_loc陣列長度
-        con_loc[con_count-1] := 1;
-        con_loc[con_count] := 1;
-        
-        UDPC.Host := copy(s, 2, 10000);
+        UDPC.Host := con_IP[i];
         UDPC.Port := 8787; 
-        memo1.Lines.add('C> HOST ' + UDPC.Host);
-        memo1.Lines.add('C> con_count ' + inttostr(con_count));
-
-        UDPC.send('N' + inttostr(con_count));
-      end;
+        UDPC.Send(s);
+      end; 
     end;
+  end
+  
+  // 2) Client & Server: 接收 出牌結果
+  else if copy(s, 1, 1) = 'P' then
+  begin
+    //
+  end
+  
+  // 3) Client: 接收 對方給的序號 'N[序號]'
+  else if copy(s, 1, 1) = 'N' then
+  begin
+    con_num := strtoint(copy(s, 2, 10000));
+    Form1.Caption := GAME_NAME + '：多人模式（Client｜已連線！ [' + inttostr(con_num) + ']）';
+  end
+
+  // 4) Server: 接收 新連線 'C[IP]'
+  else if copy(s, 1, 1) = 'C' then
+  begin
+    //(原本伺服器中有 i 人)
+    con_count := Length(con_IP);
+    con_count := con_count + 1;
+
+    //(紀錄新玩家IP)
+    setlength(con_IP, con_count); // 重新設定con_IP陣列長度
+    con_IP[con_count-1] := copy(s, 2, 10000);
+
+    //(設定新玩家位置)
+    setlength(con_loc, con_count*2); // 重新設定con_loc陣列長度
+    con_loc[con_count-1] := 1;
+    con_loc[con_count-2] := 1;
+    
+    //(送出玩家編號給Client)
+    UDPC.Host := copy(s, 2, 10000);
+    UDPC.Port := 8787;
+    UDPC.send('N' + inttostr(con_count));
+
+    //DEBUG
+    memo1.Lines.add('C> IP ' + UDPC.Host);
+    memo1.Lines.add('C> Port ' + inttostr(UDPC.Port));
+    memo1.Lines.add('C> con_count ' + inttostr(con_count));
   end;
 end;
 
@@ -582,7 +595,7 @@ begin
         WSAErr := 'Winsock is not responding."';
         Exit;
     end;
- 
+
     IPaddr := '';
     New(HName);
     if GetHostName(HName^, SizeOf(Name)) = 0 then
