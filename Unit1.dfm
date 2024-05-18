@@ -1,9 +1,9 @@
 object Form1: TForm1
-  Left = 442
-  Top = 137
+  Left = 455
+  Top = 92
   BorderStyle = bsDialog
   Caption = 'D&D'
-  ClientHeight = 615
+  ClientHeight = 650
   ClientWidth = 651
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -101,7 +101,7 @@ object Form1: TForm1
   end
   object Button1: TButton
     Left = 112
-    Top = 504
+    Top = 528
     Width = 169
     Height = 41
     Caption = #24448#21069#36208
@@ -116,7 +116,7 @@ object Form1: TForm1
   end
   object Button2: TButton
     Left = 112
-    Top = 552
+    Top = 576
     Width = 81
     Height = 41
     Caption = '< '#24038#36681
@@ -125,7 +125,7 @@ object Form1: TForm1
   end
   object Button3: TButton
     Left = 208
-    Top = 552
+    Top = 576
     Width = 73
     Height = 41
     Caption = #21491#36681' >'
@@ -224,8 +224,36 @@ object Form1: TForm1
     Top = 496
     Width = 75
     Height = 25
-    Caption = #23617#30524
+    Caption = #23617#30524'1'
     TabOrder = 10
+    OnClick = Button7Click
+  end
+  object Button6: TButton
+    Left = 112
+    Top = 496
+    Width = 75
+    Height = 25
+    Caption = #23617#30524'2'
+    TabOrder = 11
+    OnClick = Button6Click
+  end
+  object Button8: TButton
+    Left = 304
+    Top = 496
+    Width = 75
+    Height = 25
+    Caption = #23617#30524'4'
+    TabOrder = 12
+    OnClick = Button8Click
+  end
+  object Button9: TButton
+    Left = 208
+    Top = 496
+    Width = 75
+    Height = 25
+    Caption = #23617#30524'3'
+    TabOrder = 13
+    OnClick = Button9Click
   end
   object Timer1: TTimer
     Interval = 50

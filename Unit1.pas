@@ -32,6 +32,9 @@ type
     Button4: TButton;
     Button5: TButton;
     Button7: TButton;
+    Button6: TButton;
+    Button8: TButton;
+    Button9: TButton;
     procedure FormCreate(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
@@ -45,6 +48,10 @@ type
     function GetIPFromHost(var HostName, IPaddr, WSAErr: string): Boolean;
     procedure Button4Click(Sender: TObject);
     procedure UDPSUDPRead(Sender: TObject; AData: TStream; ABinding: TIdSocketHandle);
+    procedure Button7Click(Sender: TObject);
+    procedure Button6Click(Sender: TObject);
+    procedure Button8Click(Sender: TObject);
+    procedure Button9Click(Sender: TObject);
   private
     { Private declarations }
   public
@@ -61,7 +68,7 @@ const
   GAME_NAME = 'D&D';
 
 var
-  Form1: TForm1;
+  Form1: TForm1;   
   // 完整地圖
   Lmap: array[0..Vmax, 0..Hmax] of Byte = (    
   ($00, $01, $01, $00, $00, $00, $00, $01, $00, $00, $00, $00, $01, $00, $00),
@@ -96,13 +103,17 @@ var
   con_num: ShortInt;       // 我的編號
   
   // 抓本機IP用的變數
-  Host, IP, Err: string; 
+  Host, IP, Err: string;
 
+var
+CD: array[0..3] of TCard;
 implementation
 
 {$R *.dfm}
 
 procedure TForm1.FormCreate(Sender: TObject);
+var i,j,k : integer ;
+
 begin
   //初始化儲存線條3D用的點陣圖
   Back_Bmap := TBitmap.Create;
@@ -134,9 +145,31 @@ begin
   Card2.Showdeck := true;
   Card3.Showdeck := true;
   Card4.Showdeck := true;
-end;
+   begin
+  CD[0]:=Card1; CD[1]:=Card2;CD[2]:=Card3;CD[3]:=Card4;
 
-procedure TForm1.Timer1Timer(Sender: TObject);
+  CD[0].Value:=1+random(13);
+  CD[0].Suit:=tcardsuit(random(4));
+  for i:=1 to 4 do
+
+  begin
+    k:=0 ;
+    repeat
+  CD[i].Value:=1+random(13);
+  CD[i].Suit:=tcardsuit(random(4));
+  for j:=0 to i-1 do
+  begin
+    if (CD[i].Value=CD[j].Value)and(CD[i].suit=CD[j].suit ) then
+    begin
+      k:=1; break;
+    end;
+end;
+until k=0;
+end;
+end;
+  end;
+
+procedure TForm1.Timer1Timer(Sender: TObject) ;
 begin
   // > 如果可以移動，就改變座標 <
   if Dir > 15 then
@@ -175,6 +208,7 @@ begin
   // 更新網路地圖
   UDPC.send('M');
 end;
+
 
 procedure TForm1.Make3D(Mx, My, Md: Byte; Bmap: TBitmap);
 var
@@ -559,6 +593,26 @@ begin
       end;
     Dispose(HName);
     WSACleanup;
+end;
+
+procedure TForm1.Button7Click(Sender: TObject);
+begin
+  Card1.ShowDeck:=false;
+end;
+
+procedure TForm1.Button6Click(Sender: TObject);
+begin
+  Card2.ShowDeck:=false;
+end;
+
+procedure TForm1.Button8Click(Sender: TObject);
+begin
+  Card4.ShowDeck:=false;
+end;
+
+procedure TForm1.Button9Click(Sender: TObject);
+begin
+  Card3.ShowDeck:=false;
 end;
 
 end.
