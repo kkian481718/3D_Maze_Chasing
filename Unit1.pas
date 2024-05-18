@@ -5,14 +5,14 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, Menus, ExtCtrls, StdCtrls, Card, IdUDPServer, IdBaseComponent,
-  IdComponent, IdUDPBase, IdUDPClient, winsock, IdSocketHandle;
+  IdComponent, IdUDPBase, IdUDPClient, winsock, IdSocketHandle, ComCtrls,
+  Gauges;
 
 type
   TForm1 = class(TForm)
     Button1: TButton;
     Button2: TButton;
     Button3: TButton;
-    Timer1: TTimer;
     L_LX: TLabel;
     L_LY: TLabel;
     L_Dir: TLabel;
@@ -34,8 +34,10 @@ type
     Button6: TButton;
     Button7: TButton;
     Memo1: TMemo;
+    Timer1: TTimer;
+    Gauge1: TGauge;
     procedure FormCreate(Sender: TObject);
-    procedure Timer1Timer(Sender: TObject);
+    procedure updateFrame();
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure Make3D(Mx, My, Md: Byte; Bmap: TBitmap);
     procedure Make2D(Mx, My, Md: Byte; Bmap: TBitmap);
@@ -47,6 +49,8 @@ type
     procedure conUISetVisible(bool: Boolean);
     procedure Button4Click(Sender: TObject);
     procedure UDPSUDPRead(Sender: TObject; AData: TStream; ABinding: TIdSocketHandle);
+    procedure Button8Click(Sender: TObject);
+    procedure Timer1Timer(Sender: TObject);
   private
     { Private declarations }
   public
@@ -130,6 +134,7 @@ begin
   setlength(con_loc, 2);
   con_loc[0] := 1;
   con_loc[1] := 1;
+  setlength(con_IP, 1);
   con_num := 0;
 
   //把四張牌蓋起來
@@ -139,7 +144,7 @@ begin
   Card4.Showdeck := true;
 end;
 
-procedure TForm1.Timer1Timer(Sender: TObject);
+procedure TForm1.updateFrame();
 begin
   // > 如果可以移動，就改變座標 <
   if Dir > 15 then
@@ -327,7 +332,7 @@ begin
   Bmap.Canvas.Pen.Color := $00ffff;
   Bmap.Canvas.Brush.Color := $00ffff;
   i := 0;
-  while i <= Length(con_loc) do
+  while i < Length(con_loc) do
   begin
     if i = con_num then
     begin
@@ -348,6 +353,7 @@ end;
 procedure TForm1.Button1Click(Sender: TObject);
 begin
   Dir := Dir or 16;
+  updateFrame();
 
   con_loc[con_num*2] := LX;
   con_loc[con_num*2 + 1] := LY;
@@ -359,12 +365,14 @@ end;
 procedure TForm1.Button2Click(Sender: TObject);
 begin
   Dir := (Dir + 1) and 3;
+  updateFrame();
 end;
 
 // 右轉
 procedure TForm1.Button3Click(Sender: TObject);
 begin
   Dir := (Dir + 3) and 3;
+  updateFrame();
 end;
 
 procedure TForm1.FormClose(Sender: TObject; var Action: TCloseAction);
@@ -617,6 +625,17 @@ begin
       end;
     Dispose(HName);
     WSACleanup;
+end;
+
+procedure TForm1.Button8Click(Sender: TObject);
+begin
+  updateFrame();
+end;
+
+procedure TForm1.Timer1Timer(Sender: TObject);
+begin
+  updateFrame();
+  Timer1.Enabled := false;
 end;
 
 end.

@@ -48,7 +48,7 @@ object Form1: TForm1
     Height = 96
     Value = 1
     Suit = Hearts
-    ShowDeck = True
+    ShowDeck = False
     DeckType = Standard1
   end
   object Card3: TCard
@@ -98,6 +98,13 @@ object Form1: TForm1
     Suit = Hearts
     ShowDeck = True
     DeckType = Standard1
+  end
+  object Gauge1: TGauge
+    Left = 296
+    Top = 504
+    Width = 81
+    Height = 92
+    Progress = 80
   end
   object Button1: TButton
     Left = 112
@@ -239,26 +246,26 @@ object Form1: TForm1
     Left = 392
     Top = 400
     Width = 153
-    Height = 193
+    Height = 153
     Lines.Strings = (
       'Memo1')
     TabOrder = 11
   end
-  object Timer1: TTimer
-    Interval = 100
-    OnTimer = Timer1Timer
-    Left = 592
-    Top = 16
-  end
   object UDPC: TIdUDPClient
     Port = 0
     Left = 592
-    Top = 48
+    Top = 16
   end
   object UDPS: TIdUDPServer
     Bindings = <>
     DefaultPort = 8787
     OnUDPRead = UDPSUDPRead
+    Left = 592
+    Top = 48
+  end
+  object Timer1: TTimer
+    Interval = 50
+    OnTimer = Timer1Timer
     Left = 592
     Top = 80
   end
