@@ -170,10 +170,10 @@ begin
   CD[1]:=Card2;
   CD[2]:=Card3;
   CD[3]:=Card4;
-
+  
   CD[0].Value := 1+random(13);
   CD[0].Suit := tcardsuit(random(4));
-  for i:=1 to 4 do
+  for i:=1 to 3 do
   begin
     k:=0;
     repeat
@@ -600,7 +600,7 @@ end;
 procedure TForm1.UDPSUDPRead(Sender: TObject; AData: TStream; ABinding: TIdSocketHandle);
 var
   s: string;
-  len, i, con_count: integer;
+  len, i: integer;
 
   // 得到玩家新位置用
   X, Y, num: ShortInt;

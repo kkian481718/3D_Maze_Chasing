@@ -252,7 +252,7 @@ object Form1: TForm1
     Width = 75
     Height = 25
     Caption = #23617#30524'2'
-    TabOrder = 12
+    TabOrder = 14
     OnClick = Button6Click
   end
   object Memo1: TMemo
@@ -260,7 +260,8 @@ object Form1: TForm1
     Top = 392
     Width = 153
     Height = 201
-    Lines.Strings = ('Memo1')
+    Lines.Strings = (
+      'Memo1')
     TabOrder = 11
   end
   object Button8: TButton
