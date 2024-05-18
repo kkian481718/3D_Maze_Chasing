@@ -59,7 +59,7 @@ type
     procedure Timer_conTimer(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
     
-    //è‡ªè¨‚å‡½å¼
+    //¦Û­q¨ç¦¡
     procedure Make3D(Mx, My, Md: Byte; Bmap: TBitmap);
     procedure Make2D(Mx, My, Md: Byte; Bmap: TBitmap);
     procedure updateFrame();
@@ -75,21 +75,21 @@ type
   end;
 
 const
-  horizontal_block = 37; //é¡¯ç¤ºçš„æ©«å‘åœ–æ¡ˆæ•¸
-  vertical_block = 27; //é¡¯ç¤ºçš„ç¸±å‘åœ–æ¡ˆæ•¸
-  LW = 12;   //æ¯æ ¼ç‰†å£çš„åŸºæœ¬é•·åº¦
-  MMW = 10; // å°åœ°åœ–ä¸­æ¯æ ¼ç‰†å£çš„åŸºæœ¬é•·åº¦ miniMap_Width
-  Hmax = 14; //æ©«å‘åœ–åƒæ•¸-1
-  Vmax = 14; //ç¸±å‘åœ–åƒæ•¸-1
+  horizontal_block = 37; //Åã¥Üªº¾î¦V¹Ï®×¼Æ
+  vertical_block = 27; //Åã¥ÜªºÁa¦V¹Ï®×¼Æ
+  LW = 12;   //¨C®æÀğ¾Àªº°ò¥»ªø«×
+  MMW = 10; // ¤p¦a¹Ï¤¤¨C®æÀğ¾Àªº°ò¥»ªø«× miniMap_Width
+  Hmax = 14; //¾î¦V¹Ï¹³¼Æ-1
+  Vmax = 14; //Áa¦V¹Ï¹³¼Æ-1
   GAME_NAME = 'D&D';
 
 var
   Form1: TForm1;
   
-  //3Dè¦–è§’ä¸­éœ€è¦è™•ç†åˆ°çš„ç‰†å£åœ°åœ–
+  //3Dµø¨¤¤¤»İ­n³B²z¨ìªºÀğ¾À¦a¹Ï
   Dmap: array[0..4, 0..4] of Byte; 
 
-  // å®Œæ•´åœ°åœ–
+  // §¹¾ã¦a¹Ï
   Lmap: array[0..Vmax, 0..Hmax] of Byte = (    
   ($00, $01, $01, $00, $00, $00, $00, $01, $00, $00, $00, $00, $01, $00, $00),
   ($00, $00, $01, $00, $00, $00, $00, $01, $00, $01, $01, $00, $01, $00, $00),
@@ -109,24 +109,24 @@ var
   );
 
   // Bitmap
-  Back_Bmap: TBitmap; //ç·šæ¢3DåŒ–è¦ç”¨åˆ°çš„é»é™£åœ–
-  twoD_Bmap: TBitmap; //2Dåœ°åœ–ç”¨åˆ°çš„é»é™£åœ–
+  Back_Bmap: TBitmap; //½u±ø3D¤Æ­n¥Î¨ìªºÂI°}¹Ï
+  twoD_Bmap: TBitmap; //2D¦a¹Ï¥Î¨ìªºÂI°}¹Ï
 
-  // ä¸€äº›è®Šæ•¸
-  LX, LY, Dir: ShortInt;      // æˆ‘çš„ä½ç½®
+  // ¤@¨ÇÅÜ¼Æ
+  LX, LY, Dir: ShortInt;      // §Úªº¦ì¸m
   Rect_B, Rect_M: TRect;
 
-  // é€£ç·šç”¨çš„è®Šæ•¸
-  con_mode: Byte;             // é€£æ¥æ¨¡å¼
-  con_loc: array of ShortInt; // æ‰€æœ‰ç©å®¶çš„ä½ç½®
-  con_IP: array of string;    // æ‰€æœ‰ç©å®¶çš„IP
-  con_num: ShortInt;          // æˆ‘çš„ç·¨è™Ÿ (Server = 0)
-  con_connected: boolean;     // æª¢æŸ¥æ˜¯å¦å·²é€£æ¥
+  // ³s½u¥ÎªºÅÜ¼Æ
+  con_mode: Byte;             // ³s±µ¼Ò¦¡
+  con_loc: array of ShortInt; // ©Ò¦³ª±®aªº¦ì¸m
+  con_IP: array of string;    // ©Ò¦³ª±®aªºIP
+  con_num: ShortInt;          // §Úªº½s¸¹ (Server = 0)
+  con_connected: boolean;     // ÀË¬d¬O§_¤w³s±µ
 
-  // æŠ“æœ¬æ©ŸIPç”¨çš„è®Šæ•¸
+  // §ì¥»¾÷IP¥ÎªºÅÜ¼Æ
   Host, IP, Err: string;
 
-  // æ’²å…‹ç‰Œç”¨çš„è®Šæ•¸
+  // ¼³§JµP¥ÎªºÅÜ¼Æ
   CD: array[0..3] of TCard;
 
 implementation
@@ -135,27 +135,27 @@ implementation
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  //åˆå§‹åŒ–å„²å­˜ç·šæ¢3Dç”¨çš„é»é™£åœ–
+  //ªì©l¤ÆÀx¦s½u±ø3D¥ÎªºÂI°}¹Ï
   Back_Bmap := TBitmap.Create;
   Back_Bmap.Width := 30 * LW;
   Back_Bmap.Height := 30 * LW;
 
-  //åˆå§‹åŒ–å„²å­˜2Dåœ°åœ–çš„é»é™£åœ–
+  //ªì©l¤ÆÀx¦s2D¦a¹ÏªºÂI°}¹Ï
   twoD_Bmap := Tbitmap.Create;
   twoD_Bmap.width := Hmax * MMW + 10;
   twoD_Bmap.Height := Vmax * MMW + 10;
 
-  //è®Šæ•¸åˆå§‹åŒ–
-  LX := 1; // ç©å®¶xä½ç½®
-  LY := 1; // ç©å®¶yä½ç½®
-  Dir := 1; // ç©å®¶é¢å°çš„æ–¹å‘
+  //ÅÜ¼Æªì©l¤Æ
+  LX := 1; // ª±®ax¦ì¸m
+  LY := 1; // ª±®ay¦ì¸m
+  Dir := 1; // ª±®a­±¹ïªº¤è¦V
 
-  //åˆå§‹æŠŠUDPé—œé–‰
+  //ªì©l§âUDPÃö³¬
   UDPC.Active := false;
   UDPS.Active := false;
   
-  //åˆå§‹åŒ–é€£ç·šè®Šæ•¸
-  con_mode := 0; //0:å–®äººã€1:Clientã€2:Server
+  //ªì©l¤Æ³s½uÅÜ¼Æ
+  con_mode := 0; //0:³æ¤H¡B1:Client¡B2:Server
   setlength(con_loc, 2);
   con_loc[0] := 1;
   con_loc[1] := 1;
@@ -163,7 +163,7 @@ begin
   con_num := 0;
   con_connected := false;
 
-  //æŠŠå››å¼µç‰Œè“‹èµ·ä¾†
+  //§â¥|±iµP»\°_¨Ó
   Card1.Showdeck := true;
   Card2.Showdeck := true;
   Card3.Showdeck := true;
@@ -174,7 +174,7 @@ begin
   CD[2]:=Card3;
   CD[3]:=Card4;
 
-  // å°‡ç‰Œè“‹æ´—ç‰Œ
+  // ±NµP»\¬~µP
   shuffleCards();
   
 end;
@@ -203,7 +203,7 @@ CD[0].Value := 1+random(13);
 end;
 
 
-// è®“è¦–çª—ç”¢ç”Ÿå¾Œï¼Œå¯ä»¥é¦¬ä¸Šç•«ç¬¬ä¸€æ¬¡åœ°åœ–
+// Åıµøµ¡²£¥Í«á¡A¥i¥H°¨¤Wµe²Ä¤@¦¸¦a¹Ï
 procedure TForm1.Timer1Timer(Sender: TObject);
 begin
   updateFrame();
@@ -212,17 +212,17 @@ end;
 
 procedure TForm1.updateFrame();
 begin
-  // > é¡¯ç¤ºåº§æ¨™æ–‡å­— <
+  // > Åã¥Ü®y¼Ğ¤å¦r <
   L_LX.caption := 'X: ' + inttostr(LX);
   L_LY.caption := 'Y: ' + inttostr(LY);
-  L_Dir.caption := 'æ–¹å‘: ' + inttostr(Dir);
+  L_Dir.caption := '¤è¦V: ' + inttostr(Dir);
 
-  // > ç«‹é«”åŒ– <
+  // > ¥ßÅé¤Æ <
   Make3D(LX, LY, Dir, Back_Bmap);
   Back_Bmap.Canvas.CopyMode := cmSrcCopy;
   Form1.Canvas.Draw(16, 16, Back_Bmap);
 
-  // > ç•«2Dåœ°åœ– <
+  // > µe2D¦a¹Ï <
   Make2D(LX, LY, Dir, twoD_Bmap);
   Form1.Canvas.Draw(Back_Bmap.Width+30, 16, twoD_Bmap);
 end;
@@ -232,51 +232,51 @@ procedure TForm1.Make3D(Mx, My, Md: Byte; Bmap: TBitmap);
 var
   X, Y: ShortInt;
 begin
-  // > 3Dè¦–è§’ä¸­éœ€è¦è™•ç†åˆ°çš„ç‰†å£åœ°åœ–Dmap <
+  // > 3Dµø¨¤¤¤»İ­n³B²z¨ìªºÀğ¾À¦a¹ÏDmap <
   for X := 0 to 4 do
     for Y := 0 to 4 do
       Dmap[X, Y] := 1;
 
   case Md of
-    0: begin // å¦‚æœæœå‘æ±é‚Š
+    0: begin // ¦pªG´Â¦VªFÃä
       for X := 4 downto 0 do
         for Y := -2 to 2 do
           if (Mx+X <= Hmax) and (My+Y >= 0) and (My+Y <= Vmax) then Dmap[Y+2, 4-X] := Lmap[Mx+X, My+Y];
     end;
 
-    1: begin // å¦‚æœæœå‘å—é‚Š
+    1: begin // ¦pªG´Â¦V«nÃä
       for Y := -4 to 0 do
         for X := -2 to 2 do
           if (My+Y >= 0) and (Mx+X >= 0) and (Mx+X <= Hmax) then Dmap[X+2, Y+4] := Lmap[Mx+X, My+Y];
     end;
 
-    2: begin // å¦‚æœæœå‘è¥¿é‚Š
+    2: begin // ¦pªG´Â¦V¦èÃä
       for X := -4 to 0 do
         for Y := 2 downto -2 do
           if (Mx+X >= 0) and (My+Y >= 0) and (My+Y <= Vmax) then Dmap[2-Y, 4+X] := Lmap[Mx+X, My+Y];
     end;
 
-    3: begin // å¦‚æœæœå‘åŒ—é‚Š
+    3: begin // ¦pªG´Â¦V¥_Ãä
       for Y := 4 downto 0 do
         for X := 2 downto -2 do
           if (My+Y <= Hmax) and (Mx+X >= 0) and (Mx+X <= Hmax) then Dmap[2-X, 4-Y] := Lmap[Mx+X, My+Y];
     end;
   end;
 
-  // > å°‡ç·šæ¢3Dç¹ªè£½åœ¨é»é™£åœ–ä¸Š <
+  // > ±N½u±ø3DÃ¸»s¦bÂI°}¹Ï¤W <
   Bmap.Canvas.Pen.Width := 2;
   Bmap.Canvas.Pen.Color := $ffffff;
 
-  // 0) ç•«åº•è‰²
+  // 0) µe©³¦â
   Bmap.Canvas.Brush.Color := $2a2a2a;
   Bmap.Canvas.Rectangle(0, 0, Bmap.Width, Bmap.Height);
 
-  // 1) 4æ ¼é ã€æ­£é¢çš„ç‰†å£?? (æ–¹å½¢ã€å…±5å€‹)
+  // 1) 4®æ»·¡B¥¿­±ªºÀğ¾À?? (¤è§Î¡B¦@5­Ó)
   for X := 0 to 4 do
     if (Dmap[X, 0] and 1) = 1 then
       Bmap.Canvas.Rectangle(X*6*LW, 12*LW, (X*6 + 6)*LW, 18*LW);
 
-  // 2) 3æ ¼é ã€å´é¢çš„ç‰†å£? (æ¢¯å½¢ã€å…±4å€‹)
+  // 2) 3®æ»·¡B°¼­±ªºÀğ¾À? (±è§Î¡B¦@4­Ó)
   Bmap.Canvas.Brush.Color := $282828;
   if (Dmap[0, 1] and 1) = 1 then
     Bmap.Canvas.Polygon([Point(0, 10*LW), Point(0, 20*LW), Point(6*LW, 18*LW), Point(6*LW, 12*LW)]);
@@ -287,7 +287,7 @@ begin
   if (Dmap[4, 1] and 1) = 1 then
     Bmap.Canvas.Polygon([Point(30*LW, 10*LW), Point(30*LW, 20*LW), Point(24*LW, 18*LW), Point(24*LW, 12*LW)]);
 
-  // 3) 3æ ¼é ã€æ­£é¢çš„ç‰†å£ (æ–¹å½¢ã€å…±3å€‹)
+  // 3) 3®æ»·¡B¥¿­±ªºÀğ¾À (¤è§Î¡B¦@3­Ó)
   for X := 1 to 3 do
   begin
     if (Dmap[X, 1] and 1) = 1 then
@@ -300,14 +300,14 @@ begin
     end;
   end;
 
-  // 4) 2æ ¼é ã€å´é¢çš„ç‰†å£ (æ¢¯å½¢ã€å…±2å€‹)
+  // 4) 2®æ»·¡B°¼­±ªºÀğ¾À (±è§Î¡B¦@2­Ó)
   Bmap.Canvas.Brush.Color := $262626;
   if (Dmap[1, 2] and 1) = 1 then
     Bmap.Canvas.Polygon([Point(7*LW, 7*LW), Point(7*LW, 23*LW), Point(10*LW, 20*LW), Point(10*LW, 10*LW)]);
   if (Dmap[3, 2] and 1) = 1 then
     Bmap.Canvas.Polygon([Point(23*LW, 7*LW), Point(23*LW, 23*LW), Point(20*LW, 20*LW), Point(20*LW, 10*LW)]);
 
-  // 5) æ­£é¢
+  // 5) ¥¿­±
   for X := 1 to 3 do
     if (Dmap[X, 2] and 1) = 1 then
       Bmap.Canvas.Rectangle(((X-1)*16 - 9)*LW, 7*LW, ((X-1)*16 + 7)*LW, 23*LW);
@@ -319,7 +319,7 @@ begin
   if (Dmap[3, 3] and 1) = 1 then
     Bmap.Canvas.Polygon([Point(27*LW, 3*LW), Point(27*LW, 27*LW), Point(23*LW, 23*LW), Point(23*LW, 7*LW)]);
 
-  // 7) æ­£é¢
+  // 7) ¥¿­±
   for X := 1 to 3 do
     if (Dmap[X, 3] and 1) = 1 then
       Bmap.Canvas.Rectangle(((X-1)*24 -21)*LW, 3*LW, ((X-1)*24 + 3)*LW, 27*LW);
@@ -343,11 +343,11 @@ begin
   Bmap.Canvas.Pen.Width := 1;
   Bmap.Canvas.Pen.Color := $ffff00;
   
-  // ç•«åœ°åœ–èƒŒæ™¯
+  // µe¦a¹Ï­I´º
   Bmap.Canvas.Brush.Color := $222222;
   Bmap.Canvas.Rectangle(0, 0, Bmap.Width, Bmap.Height);
 
-  // ç•«ç‰†å£
+  // µeÀğ¾À
   Bmap.Canvas.Brush.Color := $ffff00;
   for X := 0 to Hmax do
     for Y := 0 to Vmax do
@@ -355,27 +355,27 @@ begin
       if Lmap[X, Y] = 1 then Bmap.Canvas.Rectangle(X*MMW, Y*MMW, (X+1)*MMW, (Y+1)*MMW);
     end;
 
-  // ç•«ç©å®¶ä½ç½®
+  // µeª±®a¦ì¸m
   Bmap.Canvas.Pen.Color := $ff00ff;
   Bmap.Canvas.Brush.Color := $ff00ff;
   Bmap.Canvas.Rectangle(Mx*MMW, My*MMW, (Mx+1)*MMW, (My+1)*MMW);
 
-  // ç•«ç©å®¶æœå‘
+  // µeª±®a´Â¦V
   case Md of
-    // æ±
+    // ªF
     0: Bmap.Canvas.Rectangle((Mx+1)*MMW +2, My*MMW +2, (Mx+1)*MMW +4, (My+1)*MMW -2); 
     
-    // åŒ—
+    // ¥_
     1: Bmap.Canvas.Rectangle(Mx*MMW +2, My*MMW -2, (Mx+1)*MMW -2, My*MMW -4);
     
-    // è¥¿
+    // ¦è
     2: Bmap.Canvas.Rectangle(Mx*MMW -2, My*MMW +2, Mx*MMW -4, (My+1)*MMW -2);
 
-    // å—
+    // «n
     3: Bmap.Canvas.Rectangle(Mx*MMW +2, (My+1)*MMW +2, (Mx+1)*MMW -2, (My+1)*MMW +4);
   end; 
 
-  // ç•«å…¶ä»–ç©å®¶ä½ç½®
+  // µe¨ä¥Lª±®a¦ì¸m
   Bmap.Canvas.Pen.Color := $00ffff;
   Bmap.Canvas.Brush.Color := $00ffff;
   i := 0;
@@ -383,7 +383,7 @@ begin
   begin
     if i = con_num then
     begin
-      // ä¸ç”¨ç•«è‡ªå·±çš„ä½ç½®
+      // ¤£¥Îµe¦Û¤vªº¦ì¸m
       i := i + 2;
       continue;
     end else
@@ -396,30 +396,30 @@ begin
   end;
 end;
 
-// å‰é€²
+// «e¶i
 procedure TForm1.Button1Click(Sender: TObject);
 var
   i: ShortInt;
 begin
   Dir := Dir or 16;
 
-  // > å¦‚æœå¯ä»¥ç§»å‹•ï¼Œå°±æ”¹è®Šåº§æ¨™ <
+  // > ¦pªG¥i¥H²¾°Ê¡A´N§ïÅÜ®y¼Ğ <
   if Dir > 15 then
   begin
-    // ç¢ºèª 1.ç©å®¶åœ¨è¿·å®®ç¯„åœå…§ 2.æ²’æœ‰ç¢°åˆ°ç‰†å£
+    // ½T»{ 1.ª±®a¦b°g®c½d³ò¤º 2.¨S¦³¸I¨ìÀğ¾À
     Dir := Dir and 15; // ???
     case Dir of
       0: if (LX + 1 <= Hmax) and (Lmap[LX+1, LY] and 1 = 0) then
-        LX := LX + 1; // æ±
+        LX := LX + 1; // ªF
 
       1: if (LY - 1 >= 0   ) and (Lmap[LX, LY-1] and 1 = 0) then
-        LY := LY - 1; // å—
+        LY := LY - 1; // «n
 
       2: if (LX - 1 >= 0   ) and (Lmap[LX-1, LY] and 1 = 0) then
-        LX := LX - 1; // è¥¿
+        LX := LX - 1; // ¦è
 
       3: if (LY + 1 <= Vmax) and (Lmap[LX, LY+1] and 1 = 0) then
-        LY := LY + 1; // åŒ—
+        LY := LY + 1; // ¥_
     end;
   end;
 
@@ -432,7 +432,7 @@ begin
     
     2: // Server
     begin
-      // å‚³é€çµ¦æ‰€æœ‰äºº
+      // ¶Ç°eµ¹©Ò¦³¤H
       i := 1;
 
       while i <= (Length(con_IP)-1) do
@@ -447,14 +447,14 @@ begin
   updateFrame();
 end;
 
-// å·¦è½‰
+// ¥ªÂà
 procedure TForm1.Button2Click(Sender: TObject);
 begin
   Dir := (Dir + 1) and 3;
   updateFrame();
 end;
 
-// å³è½‰
+// ¥kÂà
 procedure TForm1.Button3Click(Sender: TObject);
 begin
   Dir := (Dir + 3) and 3;
@@ -463,26 +463,26 @@ end;
 
 procedure TForm1.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
-  //é‡‹æ”¾3Dã€2Dç”¨çš„é»é™£åœ–
+  //ÄÀ©ñ3D¡B2D¥ÎªºÂI°}¹Ï
   Back_Bmap.free;
   twoD_Bmap.free;
 end;
 
-// é¸æ“‡ç¶²è·¯æ¨¡å¼
+// ¿ï¾Üºô¸ô¼Ò¦¡
 procedure TForm1.ComboBox1Select(Sender: TObject);
 begin
   if ComboBox1.ItemIndex = 0 then
   begin
-    Form1.Caption := GAME_NAME + 'ï¼šå–®äººæ¨¡å¼';
+    Form1.Caption := GAME_NAME + '¡G³æ¤H¼Ò¦¡';
     con_mode := 0;
-    // éš±è—IPã€PORTã€é€£ç·šæŒ‰éˆ•çµ„
+    // ÁôÂÃIP¡BPORT¡B³s½u«ö¶s²Õ
     conUISetVisible(false); 
   end
   else begin
-    // é¡¯ç¤ºIPã€PORTã€é€£ç·šæŒ‰éˆ•çµ„
+    // Åã¥ÜIP¡BPORT¡B³s½u«ö¶s²Õ
     conUISetVisible(true); 
 
-    // å˜—è©¦å¾—åˆ°è‡ªå·±çš„IP
+    // ¹Á¸Õ±o¨ì¦Û¤vªºIP
     IP := '';
     if GetIPFromHost(Host, IP, Err) then
     begin
@@ -490,33 +490,33 @@ begin
     end else
       MessageDlg(Err, mtError, [mbOk], 0);
 
-    // è¨­å®šé€£ç·šæŒ‰éˆ•æ–‡å­—
+    // ³]©w³s½u«ö¶s¤å¦r
     if ComboBox1.ItemIndex = 1 then // Client
     begin 
-      Form1.Caption := GAME_NAME + 'ï¼šå¤šäººæ¨¡å¼ï¼ˆClientï½œæœªé€£ç·šï¼‰';
+      Form1.Caption := GAME_NAME + '¡G¦h¤H¼Ò¦¡¡]Client¡U¥¼³s½u¡^';
       con_mode := 1;
 
       Edit1.Enabled := true;
       Edit2.Enabled := true;
       Button4.Enabled := true;
       Button5.Enabled := false;
-      Button4.Caption := 'é€£ç·šï¼';
+      Button4.Caption := '³s½u¡I';
     end else
     if ComboBox1.ItemIndex = 2 then // Server
     begin
-      Form1.Caption := GAME_NAME + 'ï¼šå¤šäººæ¨¡å¼ï¼ˆServerï½œæœªå‰µå»ºï¼‰';
+      Form1.Caption := GAME_NAME + '¡G¦h¤H¼Ò¦¡¡]Server¡U¥¼³Ğ«Ø¡^';
       con_mode := 2;
 
       Edit1.Enabled := false;
       Edit2.Enabled := true;
       Button4.Enabled := true;
       Button5.Enabled := false;
-      Button4.Caption := 'å»ºç«‹ä¼ºæœå™¨ï¼';
+      Button4.Caption := '«Ø¥ß¦øªA¾¹¡I';
     end;
   end;
 end;
 
-// æŒ‰ä¸‹å»ºç«‹é€£ç·š
+// «ö¤U«Ø¥ß³s½u
 procedure TForm1.Button4Click(Sender: TObject);
 begin
 
@@ -526,12 +526,12 @@ begin
   Button5.Enabled := false;
   ComboBox1.Enabled := false;
   
-  // åˆ¤æ–·é€£ç·šæ¨¡å¼
-  // é€£ç·šæ¨¡å¼ç‚ºï¼š
+  // §PÂ_³s½u¼Ò¦¡
+  // ³s½u¼Ò¦¡¬°¡G
   case con_mode of
-    1: //1. Client å˜—è©¦é€£ç·š
+    1: //1. Client ¹Á¸Õ³s½u
     begin
-      Form1.Caption := GAME_NAME + 'ï¼šå¤šäººæ¨¡å¼ï¼ˆClientï½œæ­£åœ¨é€£ç·šè‡³ä¸»æ©Ÿ...ï¼‰';
+      Form1.Caption := GAME_NAME + '¡G¦h¤H¼Ò¦¡¡]Client¡U¥¿¦b³s½u¦Ü¥D¾÷...¡^';
 
       UDPC.Host := Edit1.Text;
       UDPC.Port := strtoint(Edit2.Text);
@@ -539,47 +539,47 @@ begin
       UDPS.DefaultPort := 8787;
       UDPS.Active := true;
 
-      Form1.Caption := GAME_NAME + 'ï¼šå¤šäººæ¨¡å¼ï¼ˆClientï½œæ­£åœ¨å‚³é€ä½ çš„IPï¼š' + IP + '...ï¼‰';
+      Form1.Caption := GAME_NAME + '¡G¦h¤H¼Ò¦¡¡]Client¡U¥¿¦b¶Ç°e§AªºIP¡G' + IP + '...¡^';
       con_connected := false;
-      UDPC.Send('C' + IP); // é€å‡ºC[IP]å˜—è©¦é€£æ¥ï¼Œä¸¦å¾—åˆ°ä¸€å€‹åºè™Ÿ
+      UDPC.Send('C' + IP); // °e¥XC[IP]¹Á¸Õ³s±µ¡A¨Ã±o¨ì¤@­Ó§Ç¸¹
 
-      // ç­‰å¾…ç¢ºèªæ˜¯å¦æœ‰æ”¶åˆ°åºè™Ÿ
+      // µ¥«İ½T»{¬O§_¦³¦¬¨ì§Ç¸¹
       Timer_con.Interval := 3000; //3s
       Timer_con.Enabled := true;
       Timer_con.Tag := 1;
     end;
 
-    2: //2. å˜—è©¦å»ºç«‹ Server
+    2: //2. ¹Á¸Õ«Ø¥ß Server
     begin
-      Form1.Caption := GAME_NAME + 'ï¼šå¤šäººæ¨¡å¼ï¼ˆServerï½œæ­£åœ¨å˜—è©¦å»ºç«‹æ–°ä¼ºæœå™¨...ï¼‰';
+      Form1.Caption := GAME_NAME + '¡G¦h¤H¼Ò¦¡¡]Server¡U¥¿¦b¹Á¸Õ«Ø¥ß·s¦øªA¾¹...¡^';
 
       UDPS.DefaultPort := strtoint(Edit2.Text);
       UDPS.Active := true;
 
       con_IP[0] := Edit1.Text;
       
-      Form1.Caption := GAME_NAME + 'ï¼šå¤šäººæ¨¡å¼ï¼ˆServerï½œå°±ç·’ï¼‰';
+      Form1.Caption := GAME_NAME + '¡G¦h¤H¼Ò¦¡¡]Server¡U´Nºü¡^';
       Button5.Enabled := true;
     end;
   end;
 
 end;
 
-// Clienté€£ç·šå¾Œï¼Œç­‰å¾…ç¢ºèªæ˜¯å¦æœ‰æ¥åˆ°é€£ç·šæˆåŠŸçš„è¨Šæ¯
+// Client³s½u«á¡Aµ¥«İ½T»{¬O§_¦³±µ¨ì³s½u¦¨¥\ªº°T®§
 procedure TForm1.Timer_conTimer(Sender: TObject);
 begin
   if con_connected = false then
   begin
-    //å…è¨±ç©å®¶åœæ­¢å˜—è©¦
+    //¤¹³\ª±®a°±¤î¹Á¸Õ
     Button5.Enabled := true;
 
     Timer_con.Tag := Timer_con.Tag + 1;
-    UDPC.Send('C' + IP); // é€å‡ºC[IP]å˜—è©¦é€£æ¥ï¼Œä¸¦å¾—åˆ°ä¸€å€‹åºè™Ÿ
-    Form1.Caption := GAME_NAME + 'ï¼šå¤šäººæ¨¡å¼ï¼ˆClientï½œé€£ç·šå¤±æ•—ï¼Œæ­£åœ¨å˜—è©¦ç¬¬' + inttostr(Timer_con.Tag) + 'æ¬¡...ï¼‰';
+    UDPC.Send('C' + IP); // °e¥XC[IP]¹Á¸Õ³s±µ¡A¨Ã±o¨ì¤@­Ó§Ç¸¹
+    Form1.Caption := GAME_NAME + '¡G¦h¤H¼Ò¦¡¡]Client¡U³s½u¥¢±Ñ¡A¥¿¦b¹Á¸Õ²Ä' + inttostr(Timer_con.Tag) + '¦¸...¡^';
   end;
 end;
 
-// æŒ‰ä¸‹æ–·é–‹é€£æ¥
+// «ö¤UÂ_¶}³s±µ
 procedure TForm1.Button5Click(Sender: TObject);
 begin
   disconnect();
@@ -592,8 +592,8 @@ begin
 
   UDPC.Send('D' + inttostr(con_num));
   
-  //åˆå§‹åŒ–é€£ç·šè®Šæ•¸
-  con_mode := 0; //0:å–®äººã€1:Clientã€2:Server
+  //ªì©l¤Æ³s½uÅÜ¼Æ
+  con_mode := 0; //0:³æ¤H¡B1:Client¡B2:Server
   setlength(con_loc, 2);
   con_loc[0] := 1;
   con_loc[1] := 1;
@@ -606,51 +606,51 @@ begin
 
   ComboBox1.Enabled := true;
   conUISetVisible(false);
-  Form1.Caption := GAME_NAME + 'ï¼šå–®äººæ¨¡å¼';
+  Form1.Caption := GAME_NAME + '¡G³æ¤H¼Ò¦¡';
 end;
 
-// UDPSæ¥æ”¶è³‡è¨Š
+// UDPS±µ¦¬¸ê°T
 procedure TForm1.UDPSUDPRead(Sender: TObject; AData: TStream; ABinding: TIdSocketHandle);
 var
   s: string;
   len, i: integer;
 
-  // å¾—åˆ°ç©å®¶æ–°ä½ç½®ç”¨
+  // ±o¨ìª±®a·s¦ì¸m¥Î
   X, Y, num: ShortInt;
 
-  // æŠŠå­—ä¸²åˆ†å‰²ç”¨
+  // §â¦r¦ê¤À³Î¥Î
   temp: TStringList;
   s_p: PChar;
 begin
-  // > ä¸‹è¼‰è³‡æ–™ <
+  // > ¤U¸ü¸ê®Æ <
   len := AData.Size;
   setlength(s, len);
   Adata.Read(s[1], len);
   memo1.Lines.add('UDPS> ' + s); // DEBUG
 
-  // > è§£æè³‡æ–™ <
-  // 1) Client & Server: æ¥æ”¶åœ°åœ–æ›´æ–° L[ç©å®¶ç·¨è™Ÿ]X[åº§æ¨™]Y[åº§æ¨™]
+  // > ¸ÑªR¸ê®Æ <
+  // 1) Client & Server: ±µ¦¬¦a¹Ï§ó·s L[ª±®a½s¸¹]X[®y¼Ğ]Y[®y¼Ğ]
   if copy(s, 1, 1) = 'L' then
   begin
-    // (å¾—åˆ°ç©å®¶ç·¨è™Ÿã€æ–°çš„Xå’ŒY)
+    // (±o¨ìª±®a½s¸¹¡B·sªºX©MY)
     temp := TStringList.Create;
     s_p := PChar(s);
     ExtractStrings(['L', 'X', 'Y'], [], s_p, temp);
-    num := strtoint(temp[0]); //é€å‡ºç§»å‹•è¨Šè™Ÿçš„ç©å®¶ç·¨è™Ÿ
-    X := strtoint(temp[1]);   //æ–°çš„Xå€¼
-    Y := strtoint(temp[2]);   //æ–°çš„Yå€¼
+    num := strtoint(temp[0]); //°e¥X²¾°Ê°T¸¹ªºª±®a½s¸¹
+    X := strtoint(temp[1]);   //·sªºX­È
+    Y := strtoint(temp[2]);   //·sªºY­È
     temp.free;
 
-    // (æ›´æ–°è‡ªå·±çš„con_loc[][])
+    // (§ó·s¦Û¤vªºcon_loc[][])
     if (length(con_loc) < (num+1)*2) then
       setlength(con_loc, (num+1)*2);
     con_loc[num*2] := X;
     con_loc[num*2 + 1] := Y;
 
-    //æ›´æ–°ç•«é¢
+    //§ó·sµe­±
     updateFrame();
     
-    // å¦‚æœæ˜¯ä¼ºæœå™¨ï¼Œè¦å”åŠ©è½‰ç™¼è¨Šæ¯
+    // ¦pªG¬O¦øªA¾¹¡A­n¨ó§UÂàµo°T®§
     if con_mode = 2 then
     begin
       i := 1;
@@ -671,35 +671,35 @@ begin
     end;
   end
   
-  // 2) Client & Server: æ¥æ”¶ å‡ºç‰Œçµæœ
+  // 2) Client & Server: ±µ¦¬ ¥XµPµ²ªG
   else if copy(s, 1, 1) = 'P' then
   begin
     //
   end
   
-  // 3) Client: æ¥æ”¶ å°æ–¹çµ¦çš„åºè™Ÿ 'N[åºè™Ÿ]'
+  // 3) Client: ±µ¦¬ ¹ï¤èµ¹ªº§Ç¸¹ 'N[§Ç¸¹]'
   else if copy(s, 1, 1) = 'N' then
   begin
     con_connected := true;
     con_num := strtoint(copy(s, 2, 10000));
-    Form1.Caption := GAME_NAME + 'ï¼šå¤šäººæ¨¡å¼ï¼ˆClientï½œå·²é€£ç·šï¼ [' + inttostr(con_num) + ']ï¼‰';
+    Form1.Caption := GAME_NAME + '¡G¦h¤H¼Ò¦¡¡]Client¡U¤w³s½u¡I [' + inttostr(con_num) + ']¡^';
     Button5.Enabled := true;
   end
 
-  // 4) Server: æ¥æ”¶ æ–°é€£ç·š 'C[IP]'
+  // 4) Server: ±µ¦¬ ·s³s½u 'C[IP]'
   else if copy(s, 1, 1) = 'C' then
   begin
-    //(ç´€éŒ„æ–°ç©å®¶IP)
-    setlength(con_IP, length(con_IP) + 1); // é‡æ–°è¨­å®šcon_IPé™£åˆ—é•·åº¦
+    //(¬ö¿ı·sª±®aIP)
+    setlength(con_IP, length(con_IP) + 1); // ­«·s³]©wcon_IP°}¦Cªø«×
     con_IP[length(con_IP)-1] := copy(s, 2, 10000);
 
-    //(è¨­å®šæ–°ç©å®¶ä½ç½®)
-    setlength(con_loc, length(con_loc) + 2); // é‡æ–°è¨­å®šcon_locé™£åˆ—é•·åº¦
+    //(³]©w·sª±®a¦ì¸m)
+    setlength(con_loc, length(con_loc) + 2); // ­«·s³]©wcon_loc°}¦Cªø«×
     con_loc[length(con_loc)-1] := 1;
     con_loc[length(con_loc)-2] := 1;
-    //TODO: æ”¹æˆäº‚æ•¸
+    //TODO: §ï¦¨¶Ã¼Æ
 
-    //(é€å‡ºç©å®¶ç·¨è™Ÿçµ¦Client)
+    //(°e¥Xª±®a½s¸¹µ¹Client)
     UDPC.Host := copy(s, 2, 10000);
     UDPC.Port := 8787;
     UDPC.send('N' + inttostr(length(con_IP)-1));
@@ -710,14 +710,14 @@ begin
     memo1.Lines.add('C> con_count ' + inttostr(length(con_IP)-1));
   end
 
-  // 5) Server: æ¥æ”¶ ç©å®¶é›¢é–‹é€£ç·š 'D[ç·¨è™Ÿ]'
+  // 5) Server: ±µ¦¬ ª±®aÂ÷¶}³s½u 'D[½s¸¹]'
   else if copy(s, 1, 1) = 'D' then
   begin
-    // æŠŠåœ°åœ–æ“¦æ‰
+    // §â¦a¹ÏÀ¿±¼
   end;
 end;
 
-// é¡¯ç¤º/éš±è—é€£ç·šæ¬„
+// Åã¥Ü/ÁôÂÃ³s½uÄæ
 procedure TForm1.conUISetVisible(bool: Boolean);
 begin
   Label1.Visible := bool;
@@ -728,11 +728,11 @@ begin
   Button5.Visible := bool;
 end;
 
-// å¾—åˆ°è‡ªå·±é›»è…¦çš„IP
+// ±o¨ì¦Û¤v¹q¸£ªºIP
 function TForm1.GetIPFromHost (var HostName, IPaddr, WSAErr: string): Boolean;
 type
-    Name = array[0..100] of Char;     // Delphi 7(D7) çš„å¯«æ³•
-    // Name = array[0..100] of AnsiChar;    // Delphi2009 ä»¥å¾Œçš„å¯«æ³•
+    Name = array[0..100] of Char;     // Delphi 7(D7) ªº¼gªk
+    // Name = array[0..100] of AnsiChar;    // Delphi2009 ¥H«áªº¼gªk
     PName = ^Name;
 var
     HEnt: pHostEnt;
