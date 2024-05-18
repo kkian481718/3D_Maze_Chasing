@@ -1,6 +1,6 @@
 object Form1: TForm1
-  Left = 423
-  Top = 75
+  Left = 212
+  Top = 85
   BorderStyle = bsDialog
   Caption = 'D&D'
   ClientHeight = 613

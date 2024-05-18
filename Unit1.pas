@@ -376,11 +376,15 @@ begin
     
     2: // Server
     begin
-      for i:=1 to Length(con_IP) do
+      // 傳送給所有人
+      i := 1;
+      memo1.Lines.add(inttostr(Length(con_IP))); //DEBUG
+      while i <= (Length(con_IP)-1) do
       begin
-        UDPC.Host := con_IP[i-1];
+        UDPC.Host := con_IP[i];
         UDPC.Port := 8787; 
         UDPC.Send('L' + inttostr(con_num) + 'X' + inttostr(LX) + 'Y' + inttostr(LY));
+        i := i+1;
       end;
     end;
   end;
@@ -495,6 +499,8 @@ begin
 
       UDPS.DefaultPort := strtoint(Edit2.Text);
       UDPS.Active := true;
+
+      con_IP[0] := Edit1.Text;
       
       Form1.Caption := GAME_NAME + '：多人模式（Server｜就緒）';
       Button5.Enabled := true;
@@ -588,7 +594,7 @@ begin
     if con_mode = 2 then
     begin
       i := 1;
-      while i <= Length(con_IP) do
+      while i <= (Length(con_IP)-1) do
       begin
         if i = num then
         begin
@@ -596,7 +602,7 @@ begin
           continue;
         end
         else begin
-          UDPC.Host := con_IP[i-1];
+          UDPC.Host := con_IP[i];
           UDPC.Port := 8787; 
           UDPC.Send(s);
           i := i+1;
@@ -623,29 +629,24 @@ begin
   // 4) Server: 接收 新連線 'C[IP]'
   else if copy(s, 1, 1) = 'C' then
   begin
-    //(原本伺服器中有 i 個Client)
-    // i=0, 1, 2, ...
-    con_count := Length(con_IP)-1;
-    con_count := con_count + 1;
-
     //(紀錄新玩家IP)
-    setlength(con_IP, con_count); // 重新設定con_IP陣列長度
-    con_IP[con_count-1] := copy(s, 2, 10000);
+    setlength(con_IP, length(con_IP) + 1); // 重新設定con_IP陣列長度
+    con_IP[length(con_IP)-1] := copy(s, 2, 10000);
 
     //(設定新玩家位置)
-    setlength(con_loc, con_count*2); // 重新設定con_loc陣列長度
-    con_loc[con_count-1] := 1;
-    con_loc[con_count-2] := 1;
+    setlength(con_loc, length(con_loc) + 2); // 重新設定con_loc陣列長度
+    con_loc[length(con_loc)-1] := 1;
+    con_loc[length(con_loc)-2] := 1;
     
     //(送出玩家編號給Client)
     UDPC.Host := copy(s, 2, 10000);
     UDPC.Port := 8787;
-    UDPC.send('N' + inttostr(con_count));
+    UDPC.send('N' + inttostr(length(con_IP)-1));
 
     //DEBUG
     memo1.Lines.add('C> IP ' + UDPC.Host);
     memo1.Lines.add('C> Port ' + inttostr(UDPC.Port));
-    memo1.Lines.add('C> con_count ' + inttostr(con_count));
+    memo1.Lines.add('C> con_count ' + inttostr(length(con_IP)-1));
   end;
 end;
 
