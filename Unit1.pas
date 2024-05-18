@@ -212,9 +212,6 @@ begin
   // > 畫2D地圖 <
   Make2D(LX, LY, Dir, twoD_Bmap);
   Form1.Canvas.Draw(Back_Bmap.Width+30, 16, twoD_Bmap);
-
-  // 更新網路地圖
-  UDPC.send('M');
 end;
 
 
@@ -415,6 +412,7 @@ begin
 
   con_loc[con_num*2] := LX;
   con_loc[con_num*2 + 1] := LY;
+
   case con_mode of
     1: // Client
     UDPC.send('L' + inttostr(con_num) + 'X' + inttostr(LX) + 'Y' + inttostr(LY));
@@ -423,7 +421,6 @@ begin
     begin
       // 傳送給所有人
       i := 1;
-      memo1.Lines.add(inttostr(Length(con_IP))); //DEBUG
       while i <= (Length(con_IP)-1) do
       begin
         UDPC.Host := con_IP[i];
@@ -578,6 +575,7 @@ procedure TForm1.disconnect();
 begin
   Timer_con.Enabled := false;
   ComboBox1.ItemIndex := 0;
+  UDPC.Send('D' + con_num);
   
   //初始化連線變數
   con_mode := 0; //0:單人、1:Client、2:Server
@@ -613,7 +611,7 @@ begin
   len := AData.Size;
   setlength(s, len);
   Adata.Read(s[1], len);
-  memo1.Lines.add(s); // DEBUG
+  memo1.Lines.add('UDPS> ' + s); // DEBUG
 
   // > 解析資料 <
   // 1) Client & Server: 接收地圖更新 L[玩家編號]X[座標]Y[座標]
@@ -629,6 +627,8 @@ begin
     temp.free;
 
     // (更新自己的con_loc[][])
+    if (length(con_loc) < (num+1)*2) then
+      setlength(con_loc, (num+1)*2);
     con_loc[num*2] := X;
     con_loc[num*2 + 1] := Y;
 
@@ -682,7 +682,8 @@ begin
     setlength(con_loc, length(con_loc) + 2); // 重新設定con_loc陣列長度
     con_loc[length(con_loc)-1] := 1;
     con_loc[length(con_loc)-2] := 1;
-    
+    //TODO: 改成亂數
+
     //(送出玩家編號給Client)
     UDPC.Host := copy(s, 2, 10000);
     UDPC.Port := 8787;
@@ -692,6 +693,12 @@ begin
     memo1.Lines.add('C> IP ' + UDPC.Host);
     memo1.Lines.add('C> Port ' + inttostr(UDPC.Port));
     memo1.Lines.add('C> con_count ' + inttostr(length(con_IP)-1));
+  end;
+
+  // 5) Server: 接收 玩家離開連線 'D[編號]'
+  else if copy(s, 1, 1) = 'D' then
+  begin
+    // 把地圖擦掉
   end;
 end;
 
