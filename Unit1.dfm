@@ -1,6 +1,6 @@
 object Form1: TForm1
-  Left = 212
-  Top = 85
+  Left = 364
+  Top = 86
   BorderStyle = bsDialog
   Caption = 'D&D'
   ClientHeight = 613
@@ -288,6 +288,7 @@ object Form1: TForm1
     Top = 552
   end
   object UDPS: TIdUDPServer
+    Active = True
     Bindings = <>
     DefaultPort = 8787
     OnUDPRead = UDPSUDPRead

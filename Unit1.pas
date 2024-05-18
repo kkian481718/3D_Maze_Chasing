@@ -66,6 +66,7 @@ type
     procedure disconnect();
     procedure conUISetVisible(bool: Boolean);
     function GetIPFromHost(var HostName, IPaddr, WSAErr: string): Boolean;
+    procedure shuffleCards();
 
   private
     { Private declarations }
@@ -133,8 +134,6 @@ implementation
 {$R *.dfm}
 
 procedure TForm1.FormCreate(Sender: TObject);
-var i, j, k : integer;
-
 begin
   //初始化儲存線條3D用的點陣圖
   Back_Bmap := TBitmap.Create;
@@ -174,8 +173,17 @@ begin
   CD[1]:=Card2;
   CD[2]:=Card3;
   CD[3]:=Card4;
+
+  // 將牌蓋洗牌
+  shuffleCards();
   
-  CD[0].Value := 1+random(13);
+end;
+
+procedure TForm1.shuffleCards();
+var
+  i, j, k: integer;
+begin
+CD[0].Value := 1+random(13);
   CD[0].Suit := tcardsuit(random(4));
   for i:=1 to 3 do
   begin
@@ -194,8 +202,9 @@ begin
   end;
 end;
 
+
 // 讓視窗產生後，可以馬上畫第一次地圖
-procedure TForm1.Timer1Timer(Sender: TObject) ;
+procedure TForm1.Timer1Timer(Sender: TObject);
 begin
   updateFrame();
   Timer1.Enabled := false;
