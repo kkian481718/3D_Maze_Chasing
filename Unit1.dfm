@@ -1,10 +1,10 @@
 object Form1: TForm1
-  Left = 442
-  Top = 137
+  Left = 423
+  Top = 75
   BorderStyle = bsDialog
   Caption = 'D&D'
-  ClientHeight = 614
-  ClientWidth = 651
+  ClientHeight = 613
+  ClientWidth = 564
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -48,7 +48,7 @@ object Form1: TForm1
     Height = 96
     Value = 1
     Suit = Hearts
-    ShowDeck = False
+    ShowDeck = True
     DeckType = Standard1
   end
   object Card3: TCard
@@ -100,16 +100,26 @@ object Form1: TForm1
     DeckType = Standard1
   end
   object Gauge1: TGauge
-    Left = 296
-    Top = 504
-    Width = 81
-    Height = 92
-    Progress = 80
+    Left = 16
+    Top = 576
+    Width = 361
+    Height = 17
+    BackColor = clBtnShadow
+    Color = clWhite
+    ForeColor = clSilver
+    Font.Charset = ANSI_CHARSET
+    Font.Color = clBlack
+    Font.Height = -13
+    Font.Name = 'Cascadia Mono SemiBold'
+    Font.Style = [fsBold]
+    ParentColor = False
+    ParentFont = False
+    Progress = 100
   end
   object Button1: TButton
     Left = 112
-    Top = 504
-    Width = 169
+    Top = 528
+    Width = 177
     Height = 41
     Caption = #24448#21069#36208
     Font.Charset = ANSI_CHARSET
@@ -122,8 +132,8 @@ object Form1: TForm1
     OnClick = Button1Click
   end
   object Button2: TButton
-    Left = 112
-    Top = 552
+    Left = 16
+    Top = 528
     Width = 81
     Height = 41
     Caption = '< '#24038#36681
@@ -131,8 +141,8 @@ object Form1: TForm1
     OnClick = Button2Click
   end
   object Button3: TButton
-    Left = 208
-    Top = 552
+    Left = 304
+    Top = 528
     Width = 73
     Height = 41
     Caption = #21491#36681' >'
@@ -225,6 +235,7 @@ object Form1: TForm1
     ParentFont = False
     TabOrder = 9
     Visible = False
+    OnClick = Button5Click
   end
   object Button6: TButton
     Left = 416
@@ -244,29 +255,37 @@ object Form1: TForm1
   end
   object Memo1: TMemo
     Left = 392
-    Top = 400
+    Top = 392
     Width = 153
-    Height = 153
+    Height = 201
     Lines.Strings = (
       'Memo1')
     TabOrder = 11
   end
   object UDPC: TIdUDPClient
     Port = 0
-    Left = 592
-    Top = 16
+    Left = 400
+    Top = 552
   end
   object UDPS: TIdUDPServer
     Bindings = <>
     DefaultPort = 8787
     OnUDPRead = UDPSUDPRead
-    Left = 592
-    Top = 48
+    Left = 432
+    Top = 552
   end
   object Timer1: TTimer
     Interval = 50
     OnTimer = Timer1Timer
-    Left = 592
-    Top = 80
+    Left = 464
+    Top = 552
+  end
+  object Timer_con: TTimer
+    Tag = 1
+    Enabled = False
+    Interval = 5000
+    OnTimer = Timer_conTimer
+    Left = 496
+    Top = 552
   end
 end
