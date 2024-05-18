@@ -434,6 +434,7 @@ begin
     begin
       // 傳送給所有人
       i := 1;
+
       while i <= (Length(con_IP)-1) do
       begin
         UDPC.Host := con_IP[i];
@@ -588,6 +589,7 @@ procedure TForm1.disconnect();
 begin
   Timer_con.Enabled := false;
   ComboBox1.ItemIndex := 0;
+
   UDPC.Send('D' + inttostr(con_num));
   
   //初始化連線變數
