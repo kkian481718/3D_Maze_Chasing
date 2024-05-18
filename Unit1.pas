@@ -83,7 +83,11 @@ const
   GAME_NAME = 'D&D';
 
 var
-  Form1: TForm1;   
+  Form1: TForm1;
+  
+  //3D視角中需要處理到的牆壁地圖
+  Dmap: array[0..4, 0..4] of Byte; 
+
   // 完整地圖
   Lmap: array[0..Vmax, 0..Hmax] of Byte = (    
   ($00, $01, $01, $00, $00, $00, $00, $01, $00, $00, $00, $00, $01, $00, $00),
@@ -103,7 +107,7 @@ var
   ($00, $00, $00, $01, $00, $00, $00, $00, $00, $01, $00, $00, $00, $00, $00)
   );
 
-  Dmap: array[0..4, 0..4] of Byte; //3D視角中需要處理到的牆壁地圖
+  // Bitmap
   Back_Bmap: TBitmap; //線條3D化要用到的點陣圖
   twoD_Bmap: TBitmap; //2D地圖用到的點陣圖
 
