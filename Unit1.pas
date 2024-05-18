@@ -5,14 +5,14 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, Menus, ExtCtrls, StdCtrls, Card, IdUDPServer, IdBaseComponent,
-  IdComponent, IdUDPBase, IdUDPClient, winsock, IdSocketHandle;
+  IdComponent, IdUDPBase, IdUDPClient, winsock, IdSocketHandle, ComCtrls,
+  Gauges;
 
 type
   TForm1 = class(TForm)
     Button1: TButton;
     Button2: TButton;
     Button3: TButton;
-    Timer1: TTimer;
     L_LX: TLabel;
     L_LY: TLabel;
     L_Dir: TLabel;
@@ -35,23 +35,38 @@ type
     Button6: TButton;
     Button8: TButton;
     Button9: TButton;
+    Memo1: TMemo;
+    Timer1: TTimer;
+    Gauge1: TGauge;
+    Timer_con: TTimer;
     procedure FormCreate(Sender: TObject);
-    procedure Timer1Timer(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
-    procedure Make3D(Mx, My, Md: Byte; Bmap: TBitmap);
-    procedure Make2D(Mx, My, Md: Byte; Bmap: TBitmap);
+    procedure ComboBox1Select(Sender: TObject);
+    procedure UDPSUDPRead(Sender: TObject; AData: TStream; ABinding: TIdSocketHandle);
+    
+    //Button
     procedure Button1Click(Sender: TObject);
     procedure Button2Click(Sender: TObject);
     procedure Button3Click(Sender: TObject);
-    procedure ComboBox1Select(Sender: TObject);
-    procedure conUISetVisible(bool: Boolean);
-    function GetIPFromHost(var HostName, IPaddr, WSAErr: string): Boolean;
     procedure Button4Click(Sender: TObject);
-    procedure UDPSUDPRead(Sender: TObject; AData: TStream; ABinding: TIdSocketHandle);
-    procedure Button7Click(Sender: TObject);
+    procedure Button5Click(Sender: TObject);
     procedure Button6Click(Sender: TObject);
+    procedure Button7Click(Sender: TObject);
     procedure Button8Click(Sender: TObject);
     procedure Button9Click(Sender: TObject);
+    
+    //Timer
+    procedure Timer_conTimer(Sender: TObject);
+    procedure Timer1Timer(Sender: TObject);
+    
+    //自訂函式
+    procedure Make3D(Mx, My, Md: Byte; Bmap: TBitmap);
+    procedure Make2D(Mx, My, Md: Byte; Bmap: TBitmap);
+    procedure updateFrame();
+    procedure disconnect();
+    procedure conUISetVisible(bool: Boolean);
+    function GetIPFromHost(var HostName, IPaddr, WSAErr: string): Boolean;
+
   private
     { Private declarations }
   public
@@ -93,26 +108,28 @@ var
   twoD_Bmap: TBitmap; //2D地圖用到的點陣圖
 
   // 一些變數
-  LX, LY, Dir: Byte; // 我的位置
+  LX, LY, Dir: ShortInt;      // 我的位置
   Rect_B, Rect_M: TRect;
 
   // 連線用的變數
-  con_mode: Byte;          // 連接模式
-  con_count: ShortInt;     // 伺服器目前人數
-  con_loc: array of Byte;  // 伺服器內所有人的座標
-  con_num: ShortInt;       // 我的編號
-  
+  con_mode: Byte;             // 連接模式
+  con_loc: array of ShortInt; // 所有玩家的位置
+  con_IP: array of string;    // 所有玩家的IP
+  con_num: ShortInt;          // 我的編號 (Server = 0)
+  con_connected: boolean;     // 檢查是否已連接
+
   // 抓本機IP用的變數
   Host, IP, Err: string;
 
-var
-CD: array[0..3] of TCard;
+  // 撲克牌用的變數
+  CD: array[0..3] of TCard;
+
 implementation
 
 {$R *.dfm}
 
 procedure TForm1.FormCreate(Sender: TObject);
-var i,j,k : integer ;
+var i, j, k : integer;
 
 begin
   //初始化儲存線條3D用的點陣圖
@@ -133,64 +150,55 @@ begin
   //初始把UDP關閉
   UDPC.Active := false;
   UDPS.Active := false;
-
-  // 連線參數
+  
+  //初始化連線變數
   con_mode := 0; //0:單人、1:Client、2:Server
-  con_count := 0;
+  setlength(con_loc, 2);
+  con_loc[0] := 1;
+  con_loc[1] := 1;
+  setlength(con_IP, 1);
   con_num := 0;
-  setlength(con_loc, 4); // [X1, Y1, X2, Y2, ...]
+  con_connected := false;
 
   //把四張牌蓋起來
   Card1.Showdeck := true;
   Card2.Showdeck := true;
   Card3.Showdeck := true;
   Card4.Showdeck := true;
-   begin
-  CD[0]:=Card1; CD[1]:=Card2;CD[2]:=Card3;CD[3]:=Card4;
 
-  CD[0].Value:=1+random(13);
-  CD[0].Suit:=tcardsuit(random(4));
+  CD[0]:=Card1;
+  CD[1]:=Card2;
+  CD[2]:=Card3;
+  CD[3]:=Card4;
+
+  CD[0].Value := 1+random(13);
+  CD[0].Suit := tcardsuit(random(4));
   for i:=1 to 4 do
-
   begin
-    k:=0 ;
+    k:=0;
     repeat
-  CD[i].Value:=1+random(13);
-  CD[i].Suit:=tcardsuit(random(4));
-  for j:=0 to i-1 do
-  begin
-    if (CD[i].Value=CD[j].Value)and(CD[i].suit=CD[j].suit ) then
-    begin
-      k:=1; break;
-    end;
-end;
-until k=0;
-end;
-end;
+      CD[i].Value:=1+random(13);
+      CD[i].Suit:=tcardsuit(random(4));
+      for j:=0 to i-1 do
+      begin
+        if (CD[i].Value=CD[j].Value)and(CD[i].suit=CD[j].suit) then
+        begin
+          k:=1; break;
+        end;
+      end;
+    until k=0;
   end;
+end;
 
+// 讓視窗產生後，可以馬上畫第一次地圖
 procedure TForm1.Timer1Timer(Sender: TObject) ;
 begin
-  // > 如果可以移動，就改變座標 <
-  if Dir > 15 then
-  begin
-    // 確認 1.玩家在迷宮範圍內 2.沒有碰到牆壁
-    Dir := Dir and 15; // ???
-    case Dir of
-      0: if (LX + 1 <= Hmax) and (Lmap[LX+1, LY] and 1 = 0) then
-        LX := LX + 1; // 東
+  updateFrame();
+  Timer1.Enabled := false;
+end;
 
-      1: if (LY - 1 >= 0   ) and (Lmap[LX, LY-1] and 1 = 0) then
-        LY := LY - 1; // 南
-
-      2: if (LX - 1 >= 0   ) and (Lmap[LX-1, LY] and 1 = 0) then
-        LX := LX - 1; // 西
-
-      3: if (LY + 1 <= Vmax) and (Lmap[LX, LY+1] and 1 = 0) then
-        LY := LY + 1; // 北
-    end;
-  end;
-
+procedure TForm1.updateFrame();
+begin
   // > 顯示座標文字 <
   L_LX.caption := 'X: ' + inttostr(LX);
   L_LY.caption := 'Y: ' + inttostr(LY);
@@ -320,7 +328,7 @@ end;
 
 procedure TForm1.Make2D(Mx, My, Md: Byte; Bmap: TBitmap);
 var
-  X, Y: ShortInt;
+  X, Y, i: ShortInt;
 begin
   Bmap.Canvas.Pen.Width := 1;
   Bmap.Canvas.Pen.Color := $ffff00;
@@ -337,48 +345,109 @@ begin
       if Lmap[X, Y] = 1 then Bmap.Canvas.Rectangle(X*MMW, Y*MMW, (X+1)*MMW, (Y+1)*MMW);
     end;
 
+  // 畫玩家位置
   Bmap.Canvas.Pen.Color := $ff00ff;
   Bmap.Canvas.Brush.Color := $ff00ff;
-  // 畫玩家位置
   Bmap.Canvas.Rectangle(Mx*MMW, My*MMW, (Mx+1)*MMW, (My+1)*MMW);
 
   // 畫玩家朝向
   case Md of
-      // 東
-      0: Bmap.Canvas.Rectangle((Mx+1)*MMW +2, My*MMW +2, (Mx+1)*MMW +4, (My+1)*MMW -2); 
-      
-      // 北
-      1: Bmap.Canvas.Rectangle(Mx*MMW +2, My*MMW -2, (Mx+1)*MMW -2, My*MMW -4);
-      
-      // 西
-      2: Bmap.Canvas.Rectangle(Mx*MMW -2, My*MMW +2, Mx*MMW -4, (My+1)*MMW -2);
+    // 東
+    0: Bmap.Canvas.Rectangle((Mx+1)*MMW +2, My*MMW +2, (Mx+1)*MMW +4, (My+1)*MMW -2); 
+    
+    // 北
+    1: Bmap.Canvas.Rectangle(Mx*MMW +2, My*MMW -2, (Mx+1)*MMW -2, My*MMW -4);
+    
+    // 西
+    2: Bmap.Canvas.Rectangle(Mx*MMW -2, My*MMW +2, Mx*MMW -4, (My+1)*MMW -2);
 
-      // 南
-      3: Bmap.Canvas.Rectangle(Mx*MMW +2, (My+1)*MMW +2, (Mx+1)*MMW -2, (My+1)*MMW +4);
-    end;  
+    // 南
+    3: Bmap.Canvas.Rectangle(Mx*MMW +2, (My+1)*MMW +2, (Mx+1)*MMW -2, (My+1)*MMW +4);
+  end; 
+
+  // 畫其他玩家位置
+  Bmap.Canvas.Pen.Color := $00ffff;
+  Bmap.Canvas.Brush.Color := $00ffff;
+  i := 0;
+  while i < Length(con_loc) do
+  begin
+    if i = con_num then
+    begin
+      // 不用畫自己的位置
+      i := i + 2;
+      continue;
+    end else
+    begin
+      X := con_loc[i];
+      Y := con_loc[i+1];
+      Bmap.Canvas.Rectangle(X*MMW, Y*MMW, (X+1)*MMW, (Y+1)*MMW);
+      i := i + 2;
+    end;
+  end;
 end;
 
 // 前進
 procedure TForm1.Button1Click(Sender: TObject);
+var
+  i: ShortInt;
 begin
   Dir := Dir or 16;
 
+  // > 如果可以移動，就改變座標 <
+  if Dir > 15 then
+  begin
+    // 確認 1.玩家在迷宮範圍內 2.沒有碰到牆壁
+    Dir := Dir and 15; // ???
+    case Dir of
+      0: if (LX + 1 <= Hmax) and (Lmap[LX+1, LY] and 1 = 0) then
+        LX := LX + 1; // 東
+
+      1: if (LY - 1 >= 0   ) and (Lmap[LX, LY-1] and 1 = 0) then
+        LY := LY - 1; // 南
+
+      2: if (LX - 1 >= 0   ) and (Lmap[LX-1, LY] and 1 = 0) then
+        LX := LX - 1; // 西
+
+      3: if (LY + 1 <= Vmax) and (Lmap[LX, LY+1] and 1 = 0) then
+        LY := LY + 1; // 北
+    end;
+  end;
+
   con_loc[con_num*2] := LX;
   con_loc[con_num*2 + 1] := LY;
-
-  UDPC.send('L' + inttostr(con_num) + 'X' + inttostr(LX) + 'Y' + inttostr(LY));
+  case con_mode of
+    1: // Client
+    UDPC.send('L' + inttostr(con_num) + 'X' + inttostr(LX) + 'Y' + inttostr(LY));
+    
+    2: // Server
+    begin
+      // 傳送給所有人
+      i := 1;
+      memo1.Lines.add(inttostr(Length(con_IP))); //DEBUG
+      while i <= (Length(con_IP)-1) do
+      begin
+        UDPC.Host := con_IP[i];
+        UDPC.Port := 8787; 
+        UDPC.Send('L' + inttostr(con_num) + 'X' + inttostr(LX) + 'Y' + inttostr(LY));
+        i := i+1;
+      end;
+    end;
+  end;
+  updateFrame();
 end;
 
 // 左轉
 procedure TForm1.Button2Click(Sender: TObject);
 begin
   Dir := (Dir + 1) and 3;
+  updateFrame();
 end;
 
 // 右轉
 procedure TForm1.Button3Click(Sender: TObject);
 begin
   Dir := (Dir + 3) and 3;
+  updateFrame();
 end;
 
 procedure TForm1.FormClose(Sender: TObject; var Action: TCloseAction);
@@ -395,11 +464,12 @@ begin
   begin
     Form1.Caption := GAME_NAME + '：單人模式';
     con_mode := 0;
-    conUISetVisible(false); // 隱藏IP、PORT、連線按鈕組
+    // 隱藏IP、PORT、連線按鈕組
+    conUISetVisible(false); 
   end
   else begin
-    
-    conUISetVisible(true); // 顯示IP、PORT、連線按鈕組
+    // 顯示IP、PORT、連線按鈕組
+    conUISetVisible(true); 
 
     // 嘗試得到自己的IP
     IP := '';
@@ -409,8 +479,9 @@ begin
     end else
       MessageDlg(Err, mtError, [mbOk], 0);
 
-    if (ComboBox1.ItemIndex = 1) and (IP <> '') then
-    begin
+    // 設定連線按鈕文字
+    if ComboBox1.ItemIndex = 1 then // Client
+    begin 
       Form1.Caption := GAME_NAME + '：多人模式（Client｜未連線）';
       con_mode := 1;
 
@@ -420,7 +491,7 @@ begin
       Button5.Enabled := false;
       Button4.Caption := '連線！';
     end else
-    if (ComboBox1.ItemIndex = 2) and (IP <> '') then
+    if ComboBox1.ItemIndex = 2 then // Server
     begin
       Form1.Caption := GAME_NAME + '：多人模式（Server｜未創建）';
       con_mode := 2;
@@ -442,7 +513,10 @@ begin
   Edit2.Enabled := false;
   Button4.Enabled := false;
   Button5.Enabled := false;
-
+  ComboBox1.Enabled := false;
+  
+  // 判斷連線模式
+  // 連線模式為：
   case con_mode of
     1: //1. Client 嘗試連線
     begin
@@ -451,17 +525,27 @@ begin
       UDPC.Host := Edit1.Text;
       UDPC.Port := strtoint(Edit2.Text);
 
+      UDPS.DefaultPort := 8787;
+      UDPS.Active := true;
+
       Form1.Caption := GAME_NAME + '：多人模式（Client｜正在傳送你的IP：' + IP + '...）';
+      con_connected := false;
       UDPC.Send('C' + IP); // 送出C[IP]嘗試連接，並得到一個序號
+
+      // 等待確認是否有收到序號
+      Timer_con.Interval := 3000; //3s
+      Timer_con.Enabled := true;
+      Timer_con.Tag := 1;
     end;
 
-    2: //1. 嘗試建立 Server
+    2: //2. 嘗試建立 Server
     begin
       Form1.Caption := GAME_NAME + '：多人模式（Server｜正在嘗試建立新伺服器...）';
 
       UDPS.DefaultPort := strtoint(Edit2.Text);
       UDPS.Active := true;
-      con_count := 0;
+
+      con_IP[0] := Edit1.Text;
       
       Form1.Caption := GAME_NAME + '：多人模式（Server｜就緒）';
       Button5.Enabled := true;
@@ -470,75 +554,144 @@ begin
 
 end;
 
+// Client連線後，等待確認是否有接到連線成功的訊息
+procedure TForm1.Timer_conTimer(Sender: TObject);
+begin
+  if con_connected = false then
+  begin
+    //允許玩家停止嘗試
+    Button5.Enabled := true;
+
+    Timer_con.Tag := Timer_con.Tag + 1;
+    UDPC.Send('C' + IP); // 送出C[IP]嘗試連接，並得到一個序號
+    Form1.Caption := GAME_NAME + '：多人模式（Client｜連線失敗，正在嘗試第' + inttostr(Timer_con.Tag) + '次...）';
+  end;
+end;
+
+// 按下斷開連接
+procedure TForm1.Button5Click(Sender: TObject);
+begin
+  disconnect();
+end;
+
+procedure TForm1.disconnect();
+begin
+  Timer_con.Enabled := false;
+  ComboBox1.ItemIndex := 0;
+  
+  //初始化連線變數
+  con_mode := 0; //0:單人、1:Client、2:Server
+  setlength(con_loc, 2);
+  con_loc[0] := 1;
+  con_loc[1] := 1;
+  setlength(con_IP, 1);
+  con_num := 0;
+  con_connected := false;
+  
+  UDPC.Active := false;
+  UDPS.Active := false;
+
+  ComboBox1.Enabled := true;
+  conUISetVisible(false);
+  Form1.Caption := GAME_NAME + '：單人模式';
+end;
+
 // UDPS接收資訊
 procedure TForm1.UDPSUDPRead(Sender: TObject; AData: TStream; ABinding: TIdSocketHandle);
 var
-  s, r: string;
-  len: integer;
+  s: string;
+  len, i, con_count: integer;
+
+  // 得到玩家新位置用
+  X, Y, num: ShortInt;
+
+  // 把字串分割用
+  temp: TStringList;
+  s_p: PChar;
 begin
   // > 下載資料 <
   len := AData.Size;
   setlength(s, len);
   Adata.Read(s[1], len);
+  memo1.Lines.add(s); // DEBUG
 
   // > 解析資料 <
-  // C&S: 接收出牌結果
-  if copy(s, 0, 1) = 'P' then
+  // 1) Client & Server: 接收地圖更新 L[玩家編號]X[座標]Y[座標]
+  if copy(s, 1, 1) = 'L' then
   begin
+    // (得到玩家編號、新的X和Y)
+    temp := TStringList.Create;
+    s_p := PChar(s);
+    ExtractStrings(['L', 'X', 'Y'], [], s_p, temp);
+    num := strtoint(temp[0]); //送出移動訊號的玩家編號
+    X := strtoint(temp[1]);   //新的X值
+    Y := strtoint(temp[2]);   //新的Y值
+    temp.free;
 
+    // (更新自己的con_loc[][])
+    con_loc[num*2] := X;
+    con_loc[num*2 + 1] := Y;
+
+    //更新畫面
+    updateFrame();
     
-  end;
+    // 如果是伺服器，要協助轉發訊息
+    if con_mode = 2 then
+    begin
+      i := 1;
+      while i <= (Length(con_IP)-1) do
+      begin
+        if i = num then
+        begin
+          i := i+1;
+          continue;
+        end
+        else begin
+          UDPC.Host := con_IP[i];
+          UDPC.Port := 8787; 
+          UDPC.Send(s);
+          i := i+1;
+        end;
+      end; 
+    end;
+  end
   
-  case con_mode of
-    1: // Client
-    begin
-      //TODO：
-      // C: 接收地圖更新 M[地圖資料]
-      if copy(s, 0, 1) = 'M' then
-      begin
-        Form1.Caption := GAME_NAME + '：多人模式（Client｜正在更新地圖 [' + inttostr(con_num) + ']）';
-        
-        // TODO：更新con_loc[][]
+  // 2) Client & Server: 接收 出牌結果
+  else if copy(s, 1, 1) = 'P' then
+  begin
+    //
+  end
+  
+  // 3) Client: 接收 對方給的序號 'N[序號]'
+  else if copy(s, 1, 1) = 'N' then
+  begin
+    con_connected := true;
+    con_num := strtoint(copy(s, 2, 10000));
+    Form1.Caption := GAME_NAME + '：多人模式（Client｜已連線！ [' + inttostr(con_num) + ']）';
+    Button5.Enabled := true;
+  end
 
-        Form1.Caption := GAME_NAME + '：多人模式（Client｜已連線！[' + inttostr(con_num) + ']）';
-      end
+  // 4) Server: 接收 新連線 'C[IP]'
+  else if copy(s, 1, 1) = 'C' then
+  begin
+    //(紀錄新玩家IP)
+    setlength(con_IP, length(con_IP) + 1); // 重新設定con_IP陣列長度
+    con_IP[length(con_IP)-1] := copy(s, 2, 10000);
 
-      // C: 接收 對方給的序號 'N[序號]'
-      else if copy(s, 0, 1) = 'N' then
-      begin
-        con_num := strtoint(copy(s, 1, 10000));
-        Form1.Caption := GAME_NAME + '：多人模式（Client｜更新資料中... [' + inttostr(con_num) + ']）';
-      end;
-    end;
+    //(設定新玩家位置)
+    setlength(con_loc, length(con_loc) + 2); // 重新設定con_loc陣列長度
+    con_loc[length(con_loc)-1] := 1;
+    con_loc[length(con_loc)-2] := 1;
+    
+    //(送出玩家編號給Client)
+    UDPC.Host := copy(s, 2, 10000);
+    UDPC.Port := 8787;
+    UDPC.send('N' + inttostr(length(con_IP)-1));
 
-    2: // Server
-    begin
-      // S: 收到要求發送地圖
-      if copy(s, 0, 1) = 'M' then
-      begin
-        // 1. Array to str
-        if Length(con_loc)>0 then
-        begin SetString(r, PChar(@con_loc[0]), Length(con_loc)); end
-        else
-        begin r := ''; end;
-
-        // 2. send
-        UDPC.Host := copy(s, 1, 10000);
-        UDPC.Port := 8787;
-        UDPC.send('M' + r);
-      end
-
-      // S: 接收 新連線 'C[IP]'
-      else if copy(s, 0, 1) = 'C' then
-      begin
-        con_count := con_count + 1;
-        setlength(con_loc, con_count); // 重新設定con_loc陣列長度
-        
-        UDPC.Host := copy(s, 1, 10000);
-        UDPC.Port := 8787; 
-        UDPC.send('N' + inttostr(con_count));
-      end;
-    end;
+    //DEBUG
+    memo1.Lines.add('C> IP ' + UDPC.Host);
+    memo1.Lines.add('C> Port ' + inttostr(UDPC.Port));
+    memo1.Lines.add('C> con_count ' + inttostr(length(con_IP)-1));
   end;
 end;
 
