@@ -31,14 +31,15 @@ type
     Label2: TLabel;
     Button4: TButton;
     Button5: TButton;
-    Button7: TButton;
-    Button6: TButton;
-    Button8: TButton;
-    Button9: TButton;
+    Button_showcard2: TButton;
+    Button_showcard1: TButton;
+    Button_showcard3: TButton;
+    Button_showcard4: TButton;
     Memo1: TMemo;
     Timer1: TTimer;
     Gauge1: TGauge;
     Timer_con: TTimer;
+    Timer_shuffle: TTimer;
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure ComboBox1Select(Sender: TObject);
@@ -50,14 +51,15 @@ type
     procedure Button3Click(Sender: TObject);
     procedure Button4Click(Sender: TObject);
     procedure Button5Click(Sender: TObject);
-    procedure Button6Click(Sender: TObject);
-    procedure Button7Click(Sender: TObject);
-    procedure Button8Click(Sender: TObject);
-    procedure Button9Click(Sender: TObject);
+    procedure Button_showcard1Click(Sender: TObject);
+    procedure Button_showcard2Click(Sender: TObject);
+    procedure Button_showcard3Click(Sender: TObject);
+    procedure Button_showcard4Click(Sender: TObject);
     
     //Timer
     procedure Timer_conTimer(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
+    procedure Timer_shuffleTimer(Sender: TObject);
     
     //自訂函式
     procedure Make3D(Mx, My, Md: Byte; Bmap: TBitmap);
@@ -67,6 +69,8 @@ type
     procedure conUISetVisible(bool: Boolean);
     function GetIPFromHost(var HostName, IPaddr, WSAErr: string): Boolean;
     procedure shuffleCards();
+    procedure collectionCheck(mode: integer);
+    procedure sendCard(x: integer);
 
   private
     { Private declarations }
@@ -115,6 +119,8 @@ var
   // 一些變數
   LX, LY, Dir: ShortInt;      // 我的位置
   Rect_B, Rect_M: TRect;
+  HP: ShortInt;               // 血量
+  battling: boolean;          // 是否正在戰鬥
 
   // 連線用的變數
   con_mode: Byte;             // 連接模式
@@ -150,6 +156,11 @@ begin
   LY := 1; // 玩家y位置
   Dir := 1; // 玩家面對的方向
 
+  //戰鬥數值初始化
+  HP := 100;
+  Gauge1.Progress := HP;
+  battling := false;
+
   //初始把UDP關閉
   UDPC.Active := false;
   UDPS.Active := false;
@@ -162,7 +173,7 @@ begin
   setlength(con_IP, 1);
   con_num := 0;
   con_connected := false;
-
+  
   //把四張牌蓋起來
   Card1.Showdeck := true;
   Card2.Showdeck := true;
@@ -179,29 +190,18 @@ begin
   
 end;
 
-procedure TForm1.shuffleCards();
-var
-  i, j, k: integer;
+procedure TForm1.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
-CD[0].Value := 1+random(13);
-  CD[0].Suit := tcardsuit(random(4));
-  for i:=1 to 3 do
-  begin
-    k:=0;
-    repeat
-      CD[i].Value:=1+random(13);
-      CD[i].Suit:=tcardsuit(random(4));
-      for j:=0 to i-1 do
-      begin
-        if (CD[i].Value=CD[j].Value)and(CD[i].suit=CD[j].suit) then
-        begin
-          k:=1; break;
-        end;
-      end;
-    until k=0;
-  end;
+  //釋放3D、2D用的點陣圖
+  Back_Bmap.free;
+  twoD_Bmap.free;
 end;
 
+
+
+// ----------------------------------------------------------------
+// 畫面計算
+// ----------------------------------------------------------------
 
 // 讓視窗產生後，可以馬上畫第一次地圖
 procedure TForm1.Timer1Timer(Sender: TObject);
@@ -210,6 +210,7 @@ begin
   Timer1.Enabled := false;
 end;
 
+// 呼叫Make3D、2D更新畫面
 procedure TForm1.updateFrame();
 begin
   // > 顯示座標文字 <
@@ -226,7 +227,6 @@ begin
   Make2D(LX, LY, Dir, twoD_Bmap);
   Form1.Canvas.Draw(Back_Bmap.Width+30, 16, twoD_Bmap);
 end;
-
 
 procedure TForm1.Make3D(Mx, My, Md: Byte; Bmap: TBitmap);
 var
@@ -381,9 +381,9 @@ begin
   i := 0;
   while i < Length(con_loc) do
   begin
-    if i = con_num then
+    if (i = con_num) or (con_loc[i] = null) then
     begin
-      // 不用畫自己的位置
+      // 不用畫自己的位置、不用畫斷線玩家的位置
       i := i + 2;
       continue;
     end else
@@ -395,6 +395,12 @@ begin
     end;
   end;
 end;
+
+
+
+// ----------------------------------------------------------------
+// 移動、對戰
+// ----------------------------------------------------------------
 
 // 前進
 procedure TForm1.Button1Click(Sender: TObject);
@@ -444,7 +450,9 @@ begin
       end;
     end;
   end;
+
   updateFrame();
+  collectionCheck(1);
 end;
 
 // 左轉
@@ -461,12 +469,143 @@ begin
   updateFrame();
 end;
 
-procedure TForm1.FormClose(Sender: TObject; var Action: TCloseAction);
+// 出牌
+procedure TForm1.Button_showcard1Click(Sender: TObject);
 begin
-  //釋放3D、2D用的點陣圖
-  Back_Bmap.free;
-  twoD_Bmap.free;
+  sendCard(1);
 end;
+procedure TForm1.Button_showcard2Click(Sender: TObject);
+begin
+  sendCard(2);
+end;
+procedure TForm1.Button_showcard3Click(Sender: TObject);
+begin
+  sendCard(3);
+end;
+procedure TForm1.Button_showcard4Click(Sender: TObject);
+begin
+  sendCard(4);
+end;
+
+// 洗牌
+procedure TForm1.shuffleCards();
+var
+  i, j: integer;
+  is_vaild_card: boolean;
+begin
+  for i:=0 to 3 do
+  begin
+    repeat
+      is_vaild_card := true;
+      CD[i].Value := 1 + random(13);
+      CD[i].Suit := Tcardsuit(random(4));
+
+      if(i <> 0) then
+      begin
+        for j:=0 to i-1 do
+        begin
+          if (CD[i].Value = CD[j].Value) and (CD[i].suit = CD[j].suit) then
+          begin
+            is_vaild_card := false;
+            break;
+          end;
+        end;
+      end;
+    until is_vaild_card = true;
+  end;
+end;
+
+// 檢查是否有遇到人
+procedure TForm1.collectionCheck(mode: integer);
+var
+  i: integer;
+begin
+  for i := 0 to (length(con_IP)-1) do
+  begin
+    if (con_loc[i] = LX) and (con_loc[i+1] = LY) and (i <> con_num) then
+    begin
+      Button1.Enabled := false;
+      Button2.Enabled := false;
+      Button3.Enabled := false;
+
+      case mode of
+        1: // 主動撞人
+        begin
+          Button_showcard1.Enabled := true;
+          Button_showcard2.Enabled := true;
+          Button_showcard3.Enabled := true;
+          Button_showcard4.Enabled := true;
+          card1.ShowDeck := false;
+          card2.ShowDeck := false;
+          card3.ShowDeck := false;
+          card4.ShowDeck := false;
+
+          memo1.Lines.add('你逮到 ' + inttostr(i) + ' 號玩家了！');
+          memo1.Lines.add('你具有優勢！快選一張數字大的牌攻擊！');
+        end;
+
+        2: // 被撞
+        begin
+          Button_showcard1.Enabled := true;
+          Button_showcard2.Enabled := true;
+          Button_showcard3.Enabled := false;
+          Button_showcard4.Enabled := false;
+          card1.ShowDeck := false;
+          card2.ShowDeck := false;
+          card3.ShowDeck := true;
+          card4.ShowDeck := true;
+          
+          memo1.Lines.add('！！！你被 ' + inttostr(i) + ' 號玩家伏擊了！');
+          memo1.Lines.add('你處於劣勢...快選一張數字大的牌反制！');
+        end;
+      end;
+
+      Timer_shuffle.Enabled := true;
+      break;
+    end;
+  end;
+end;
+
+// 瘋狂洗牌動畫
+procedure TForm1.Timer_shuffleTimer(Sender: TObject);
+var times: ShortInt;
+begin
+  times := 0;
+  while (times < 15) do // <--改這裡可以更改洗牌時間
+  begin
+    shuffleCards();
+    times := times + 1;
+  end;
+  
+  Timer_shuffle.Enabled := false;
+  Button_showcard1.Visible := true;
+  Button_showcard2.Visible := true;
+  Button_showcard3.Visible := true;
+  Button_showcard4.Visible := true;
+end;
+
+procedure TForm1.sendCard(x: integer);
+begin
+{
+  case con_mode of
+    1: // Client
+    begin
+
+    end;
+
+    2: // Server
+    begin
+      
+    end;
+  end;
+}
+end;
+
+
+
+// ----------------------------------------------------------------
+// 連線設定
+// ----------------------------------------------------------------
 
 // 選擇網路模式
 procedure TForm1.ComboBox1Select(Sender: TObject);
@@ -649,6 +788,9 @@ begin
 
     //更新畫面
     updateFrame();
+
+    //確認碰撞
+    collectionCheck(2);
     
     // 如果是伺服器，要協助轉發訊息
     if con_mode = 2 then
@@ -670,14 +812,45 @@ begin
       end; 
     end;
   end
+
+  // 2) Client & Server: 接收 玩家離開連線 'D[編號]'
+  else if copy(s, 1, 1) = 'D' then
+  begin
+    // 把地圖擦掉
+    num := strtoint(copy(s, 2, 10000));
+    con_IP[num] := null;
+    con_loc[num*2] := null;
+    con_loc[num*2 + 1] := null;
+
+    updateFrame();
+    // 如果是伺服器，要協助轉發訊息
+    if con_mode = 2 then
+    begin
+      i := 1;
+      while i <= (Length(con_IP)-1) do
+      begin
+        if i = num then
+        begin
+          i := i+1;
+          continue;
+        end
+        else begin
+          UDPC.Host := con_IP[i];
+          UDPC.Port := 8787; 
+          UDPC.Send(s);
+          i := i+1;
+        end;
+      end; 
+    end;
+  end
   
-  // 2) Client & Server: 接收 出牌結果
+  // 3) Client & Server: 接收 出牌結果
   else if copy(s, 1, 1) = 'P' then
   begin
     //
   end
   
-  // 3) Client: 接收 對方給的序號 'N[序號]'
+  // 4) Client: 接收 伺服器給的序號 'N[序號]'
   else if copy(s, 1, 1) = 'N' then
   begin
     con_connected := true;
@@ -686,7 +859,7 @@ begin
     Button5.Enabled := true;
   end
 
-  // 4) Server: 接收 新連線 'C[IP]'
+  // 5) Server: 接收 新連線 'C[IP]'
   else if copy(s, 1, 1) = 'C' then
   begin
     //(紀錄新玩家IP)
@@ -703,17 +876,36 @@ begin
     UDPC.Host := copy(s, 2, 10000);
     UDPC.Port := 8787;
     UDPC.send('N' + inttostr(length(con_IP)-1));
+    
+    //送新人位置、IP給大家
+    {
+    i := 1;
+    if(Length(con_IP) > 2) then
+    begin
+      while i <= (Length(con_IP)-2) do
+      begin
+        if i = num then
+        begin
+          i := i+1;
+          continue;
+        end
+        else begin
+          UDPC.Host := con_IP[i];
+          UDPC.Port := 8787; 
+          UDPC.Send(s);
+          i := i+1;
+        end;
+      end;
+    end;
+    }
+
+    //刷新自己地圖
+    updateFrame();
 
     //DEBUG
     memo1.Lines.add('C> IP ' + UDPC.Host);
     memo1.Lines.add('C> Port ' + inttostr(UDPC.Port));
     memo1.Lines.add('C> con_count ' + inttostr(length(con_IP)-1));
-  end
-
-  // 5) Server: 接收 玩家離開連線 'D[編號]'
-  else if copy(s, 1, 1) = 'D' then
-  begin
-    // 把地圖擦掉
   end;
 end;
 
@@ -768,26 +960,6 @@ begin
       end;
     Dispose(HName);
     WSACleanup;
-end;
-
-procedure TForm1.Button7Click(Sender: TObject);
-begin
-  Card1.ShowDeck:=false;
-end;
-
-procedure TForm1.Button6Click(Sender: TObject);
-begin
-  Card2.ShowDeck:=false;
-end;
-
-procedure TForm1.Button8Click(Sender: TObject);
-begin
-  Card4.ShowDeck:=false;
-end;
-
-procedure TForm1.Button9Click(Sender: TObject);
-begin
-  Card3.ShowDeck:=false;
 end;
 
 end.

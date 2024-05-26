@@ -119,7 +119,7 @@ object Form1: TForm1
   object Button1: TButton
     Left = 112
     Top = 528
-    Width = 177
+    Width = 169
     Height = 41
     Caption = #24448#21069#36208
     Font.Charset = ANSI_CHARSET
@@ -134,7 +134,7 @@ object Form1: TForm1
   object Button2: TButton
     Left = 16
     Top = 528
-    Width = 81
+    Width = 73
     Height = 41
     Caption = '< '#24038#36681
     TabOrder = 1
@@ -237,23 +237,22 @@ object Form1: TForm1
     Visible = False
     OnClick = Button5Click
   end
-  object Button7: TButton
-    Left = 16
-    Top = 496
-    Width = 75
-    Height = 25
-    Caption = #23617#30524'1'
-    TabOrder = 10
-    OnClick = Button7Click
-  end
-  object Button6: TButton
+  object Button_showcard2: TButton
     Left = 112
     Top = 496
-    Width = 75
+    Width = 73
     Height = 25
-    Caption = #23617#30524'2'
+    Caption = #20986#36889#24373
+    TabOrder = 10
+    OnClick = Button_showcard2Click
+  end
+  object Button_showcard1: TButton
+    Left = 16
+    Top = 496
+    Width = 73
+    Height = 25
+    Caption = #20986#36889#24373
     TabOrder = 14
-    OnClick = Button6Click
   end
   object Memo1: TMemo
     Left = 392
@@ -261,26 +260,26 @@ object Form1: TForm1
     Width = 153
     Height = 201
     Lines.Strings = (
-      'Memo1')
+      #23601#32210#12290)
     TabOrder = 11
   end
-  object Button8: TButton
-    Left = 304
-    Top = 496
-    Width = 75
-    Height = 25
-    Caption = #23617#30524'4'
-    TabOrder = 12
-    OnClick = Button8Click
-  end
-  object Button9: TButton
+  object Button_showcard3: TButton
     Left = 208
     Top = 496
-    Width = 75
+    Width = 73
     Height = 25
-    Caption = #23617#30524'3'
+    Caption = #20986#36889#24373
+    TabOrder = 12
+    OnClick = Button_showcard3Click
+  end
+  object Button_showcard4: TButton
+    Left = 304
+    Top = 496
+    Width = 73
+    Height = 25
+    Caption = #20986#36889#24373
     TabOrder = 13
-    OnClick = Button9Click
+    OnClick = Button_showcard4Click
   end
   object UDPC: TIdUDPClient
     Port = 0
@@ -288,7 +287,6 @@ object Form1: TForm1
     Top = 552
   end
   object UDPS: TIdUDPServer
-    Active = True
     Bindings = <>
     DefaultPort = 8787
     OnUDPRead = UDPSUDPRead
@@ -308,5 +306,12 @@ object Form1: TForm1
     OnTimer = Timer_conTimer
     Left = 496
     Top = 552
+  end
+  object Timer_shuffle: TTimer
+    Enabled = False
+    Interval = 10
+    OnTimer = Timer_shuffleTimer
+    Left = 24
+    Top = 400
   end
 end
