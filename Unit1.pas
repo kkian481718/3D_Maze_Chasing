@@ -70,7 +70,9 @@ type
     function GetIPFromHost(var HostName, IPaddr, WSAErr: string): Boolean;
     procedure shuffleCards();
     procedure collectionCheck(mode: integer);
-    procedure sendCard(x: integer);
+    procedure compareCard(x: integer);
+    procedure damage();
+    procedure teleport();
 
   private
     { Private declarations }
@@ -119,8 +121,6 @@ var
   // 一些變數
   LX, LY, Dir: ShortInt;      // 我的位置
   Rect_B, Rect_M: TRect;
-  HP: ShortInt;               // 血量
-  battling: boolean;          // 是否正在戰鬥
 
   // 連線用的變數
   con_mode: Byte;             // 連接模式
@@ -128,6 +128,12 @@ var
   con_IP: array of string;    // 所有玩家的IP
   con_num: ShortInt;          // 我的編號 (Server = 0)
   con_connected: boolean;     // 檢查是否已連接
+
+  // 戰鬥用的變數
+  HP: ShortInt;               // 血量
+  battling: boolean;          // 是否正在戰鬥
+  opp_card: string;           // 對方出的卡
+  opp_num: ShortInt;          // 對方的編號 
 
   // 抓本機IP用的變數
   Host, IP, Err: string;
@@ -160,6 +166,8 @@ begin
   HP := 100;
   Gauge1.Progress := HP;
   battling := false;
+  opp_card := '';
+  opp_num := -1;
 
   //初始把UDP關閉
   UDPC.Active := false;
@@ -187,7 +195,6 @@ begin
 
   // 將牌蓋洗牌
   shuffleCards();
-  
 end;
 
 procedure TForm1.FormClose(Sender: TObject; var Action: TCloseAction);
@@ -472,19 +479,19 @@ end;
 // 出牌
 procedure TForm1.Button_showcard1Click(Sender: TObject);
 begin
-  sendCard(1);
+  compareCard(1);
 end;
 procedure TForm1.Button_showcard2Click(Sender: TObject);
 begin
-  sendCard(2);
+  compareCard(2);
 end;
 procedure TForm1.Button_showcard3Click(Sender: TObject);
 begin
-  sendCard(3);
+  compareCard(3);
 end;
 procedure TForm1.Button_showcard4Click(Sender: TObject);
 begin
-  sendCard(4);
+  compareCard(4);
 end;
 
 // 洗牌
@@ -527,6 +534,8 @@ begin
       Button1.Enabled := false;
       Button2.Enabled := false;
       Button3.Enabled := false;
+      battling := true;
+      opp_num := i;
 
       case mode of
         1: // 主動撞人
@@ -540,8 +549,9 @@ begin
           card3.ShowDeck := false;
           card4.ShowDeck := false;
 
-          memo1.Lines.add('你逮到 ' + inttostr(i) + ' 號玩家了！');
-          memo1.Lines.add('你具有優勢！快選一張數字大的牌攻擊！');
+          memo1.Lines.add('你逮到 ' + inttostr(opp_num) + ' 號玩家了！');
+          memo1.Lines.add('你具有優勢！');
+          memo1.Lines.add('快選一張數字大的牌攻擊！');
         end;
 
         2: // 被撞
@@ -555,8 +565,9 @@ begin
           card3.ShowDeck := true;
           card4.ShowDeck := true;
           
-          memo1.Lines.add('！！！你被 ' + inttostr(i) + ' 號玩家伏擊了！');
-          memo1.Lines.add('你處於劣勢...快選一張數字大的牌反制！');
+          memo1.Lines.add('你被 ' + inttostr(opp_num) + ' 號玩家伏擊了！');
+          memo1.Lines.add('你處於劣勢...');
+          memo1.Lines.add('快選一張數字大的牌反制！');
         end;
       end;
 
@@ -571,7 +582,7 @@ procedure TForm1.Timer_shuffleTimer(Sender: TObject);
 var times: ShortInt;
 begin
   times := 0;
-  while (times < 15) do // <--改這裡可以更改洗牌時間
+  while (times < 30) do // <--改這裡可以更改洗牌時間
   begin
     shuffleCards();
     times := times + 1;
@@ -584,24 +595,170 @@ begin
   Button_showcard4.Visible := true;
 end;
 
-procedure TForm1.sendCard(x: integer);
-begin
-{
-  case con_mode of
-    1: // Client
-    begin
+// 出牌後，確認對方出牌狀況
+// >>> 對方未出：傳自己的牌過去
+// >>> 對方已出：比較結果，並傳送結果
+procedure TForm1.compareCard(x: integer);
+var
+  my_value: ShortInt;
+  my_suit_num: ShortInt;
+  opp_value: ShortInt;
+  opp_suit_num: ShortInt;
 
+  winner_num: ShortInt;
+
+  // 解析資料用
+  temp: TStringList;
+  s_p: PChar;
+begin
+  // １．把牌存進 my_value 和 my_suit_num
+  my_value := CD[x-1].value;
+  if (CD[x-1].suit = 'Clubs') then begin
+    my_suit_num := 1; end
+  else if (CD[x-1].suit = 'Diamonds') then begin 
+    my_suit_num := 2; end
+  else if (CD[x-1].suit = 'Hearts') then begin 
+    my_suit_num := 3; end
+  else if (CD[x-1].suit = 'Spades') then begin 
+    my_suit_num := 4; end;
+
+  // ２．確認對方是否已出牌
+  if opp_card = '' then
+  begin // 對方還沒出：傳 P[自己的序號]O[對方的編號]C[自己的花色編號][自己的牌值] 給對方
+
+    // 輸出自己出的牌
+    memo1.Lines.add('你出了...');
+    case my_suit_num of
+      1: memo1.Lines.add('梅花 ' + my_value);
+      2: memo1.Lines.add('方塊 ' + my_value);
+      3: memo1.Lines.add('紅心 ' + my_value);
+      4: memo1.Lines.add('黑桃 ' + my_value);
     end;
 
-    2: // Server
+    // 送出 P[自己的序號]O[對方的編號]C[自己的花色編號][自己的牌值]
+    case con_mode of
+      1: // Client
+      begin
+        UDPC.send('P' + con_num + 'O' + opp_num + 'S' + my_suit_num + 'V' + my_value); //寄給server轉發
+      end;
+
+      2: // Server
+      begin
+        // 廣播給O[對手編號]
+        UDPC.Host := con_IP[opp_num];
+        UDPC.Port := 8787; 
+        UDPC.Send('P' + con_num + 'O' + opp_num + 'S' + my_suit_num + 'V' + my_value);
+      end;
+    end;
+
+    memo1.Lines.add('（正在等待對手出牌...）');
+  end
+  else begin // 對方已經出了：解析資料、比較、回傳 R[贏家編號]
+    // 解析資料
+    temp := TStringList.Create;
+    s_p := PChar(opp_card);
+    ExtractStrings(['P', 'O', 'S', 'V'], [], s_p, temp);
+    opp_suit_num = (temp[2]);
+    opp_value = strtoint(temp[3]);
+    temp.free;
+
+    // 輸出自己出的牌
+    memo1.Lines.add('你出了...');
+    case my_suit_num of
+      1: memo1.Lines.add('梅花 ' + my_value);
+      2: memo1.Lines.add('方塊 ' + my_value);
+      3: memo1.Lines.add('紅心 ' + my_value);
+      4: memo1.Lines.add('黑桃 ' + my_value);
+    end;
+
+    memo1.Lines.add('（對手已經出牌了！）');
+
+    // 輸出對手出的牌
+    memo1.Lines.add('對手出了...');
+    case opp_suit_num of
+      1: memo1.Lines.add('梅花 ' + opp_value);
+      2: memo1.Lines.add('方塊 ' + opp_value);
+      3: memo1.Lines.add('紅心 ' + opp_value);
+      4: memo1.Lines.add('黑桃 ' + opp_value);
+    end;
+
+    // 找贏家
+    memo1.Lines.add('------ 結果 -------');
+    if (my_value > opp_value) then
     begin
-      
+      winner_num := con_num;
+      memo1.Lines.add('你贏了！');
+      memo1.Lines.add('你毫髮無傷地逃脫了戰鬥！');
+      teleport();
+    end
+    else if (my_value > opp_value) then
+    begin
+      winner_num := opp_num;
+      memo1.Lines.add('你輸了...');
+      damage();
+    end
+    else if (my_value = opp_value) then
+    begin
+      if (my_suit_num > opp_suit_num) then
+      begin
+        winner_num := con_num;
+        memo1.Lines.add('你贏了！');
+        memo1.Lines.add('你毫髮無傷地逃脫了戰鬥！');
+        teleport();
+      end else
+      begin
+        winner_num := opp_num;
+        memo1.Lines.add('你輸了...');
+        damage();
+      end;
+    end;
+
+    // 傳 R[贏家編號]S[自己的花色編號]V[自己的牌值] 給對方
+    case con_mode of
+      1: // Client
+      begin
+        UDPC.send('R' + winner_num + 'S' + my_suit_num + 'V' + my_value); //寄給server轉發
+      end;
+
+      2: // Server
+      begin
+        // 廣播給O[對手編號]
+        UDPC.Host := con_IP[opp_num];
+        UDPC.Port := 8787; 
+        UDPC.send('R' + winner_num + 'S' + my_suit_num + 'V' + my_value);
+      end;
     end;
   end;
-}
 end;
 
+// 扣血
+procedure TForm1.damage();
+var
+  HPdamage: integer;
+begin
+  HPdamage := 20 + random(20);
+  HP := HP - HPdamage;
+  if (HP < 0) then HP := 0;
+  Gauge1.Progress := HP;
 
+  memo1.Lines.add('你受到了 ' + HPdamage + ' 點的傷害...');
+  memo1.Lines.add('你剩下 ' + HP + ' 點生命值...');
+
+  if (HP = 0) then
+  begin
+    // 臭嘴程式要放在這裡
+  end
+  else begin
+    memo1.Lines.add('你狼狽地脫離了戰鬥...');
+    teleport();
+  end;
+end;
+
+// 傳送到沒有人的位置
+procedure TForm1.teleport();
+begin
+
+end;
 
 // ----------------------------------------------------------------
 // 連線設定
@@ -664,6 +821,7 @@ begin
   Button4.Enabled := false;
   Button5.Enabled := false;
   ComboBox1.Enabled := false;
+  opp_card := '';
   
   // 判斷連線模式
   // 連線模式為：
@@ -847,7 +1005,78 @@ begin
   // 3) Client & Server: 接收 出牌結果
   else if copy(s, 1, 1) = 'P' then
   begin
-    //
+    // 如果是Client：存結果進opp_card內
+    if con_mode = 1 then
+    begin
+      opp_card := s;
+    end
+    // 如果是Server：確認收件人（是否寄給自己）、轉寄
+    else if con_mode = 2 then
+    begin
+      // 初步拆解資料
+      temp := TStringList.Create;
+      s_p := PChar(s);
+      ExtractStrings(['P', 'O', 'S', 'V'], [], s_p, temp);
+
+      // 確認是否寄給自己
+      if (strtoint(temp[1]) = 0) then begin
+        opp_card := s; end
+      else begin
+        UDPC.Host := con_IP[1];
+        UDPC.Port := 8787;
+        UDPC.send(s);
+      end;
+
+      temp.free;
+    end;
+  end
+
+  else if copy(s, 1, 1) = 'R' then
+  begin
+    // 拆解資料
+    temp := TStringList.Create;
+    s_p := PChar(s);
+    ExtractStrings(['P', 'O', 'S', 'V'], [], s_p, temp);
+    
+    // 輸出對手出的牌
+    memo1.Lines.add('對手出了...');
+    case opp_suit_num of
+      1: memo1.Lines.add('梅花 ' + opp_value);
+      2: memo1.Lines.add('方塊 ' + opp_value);
+      3: memo1.Lines.add('紅心 ' + opp_value);
+      4: memo1.Lines.add('黑桃 ' + opp_value);
+    end;
+
+    // 找贏家
+    memo1.Lines.add('------ 結果 -------');
+    if (my_value > opp_value) then
+    begin
+      winner_num := con_num;
+      memo1.Lines.add('你贏了！');
+      memo1.Lines.add('你毫髮無傷地逃脫了戰鬥！');
+      teleport();
+    end
+    else if (my_value > opp_value) then
+    begin
+      winner_num := opp_num;
+      memo1.Lines.add('你輸了...');
+      damage();
+    end
+    else if (my_value = opp_value) then
+    begin
+      if (my_suit_num > opp_suit_num) then
+      begin
+        winner_num := con_num;
+        memo1.Lines.add('你贏了！');
+        memo1.Lines.add('你毫髮無傷地逃脫了戰鬥！');
+        teleport();
+      end else
+      begin
+        winner_num := opp_num;
+        memo1.Lines.add('你輸了...');
+        damage();
+      end;
+    end;
   end
   
   // 4) Client: 接收 伺服器給的序號 'N[序號]'
