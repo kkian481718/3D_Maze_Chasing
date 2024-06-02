@@ -244,6 +244,7 @@ object Form1: TForm1
     Height = 25
     Caption = #20986#36889#24373
     TabOrder = 10
+    Visible = False
     OnClick = Button_showcard2Click
   end
   object Button_showcard1: TButton
@@ -253,6 +254,7 @@ object Form1: TForm1
     Height = 25
     Caption = #20986#36889#24373
     TabOrder = 14
+    Visible = False
   end
   object Memo1: TMemo
     Left = 392
@@ -270,6 +272,7 @@ object Form1: TForm1
     Height = 25
     Caption = #20986#36889#24373
     TabOrder = 12
+    Visible = False
     OnClick = Button_showcard3Click
   end
   object Button_showcard4: TButton
@@ -279,6 +282,7 @@ object Form1: TForm1
     Height = 25
     Caption = #20986#36889#24373
     TabOrder = 13
+    Visible = False
     OnClick = Button_showcard4Click
   end
   object UDPC: TIdUDPClient
