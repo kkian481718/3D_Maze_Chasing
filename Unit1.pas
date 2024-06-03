@@ -74,11 +74,11 @@ type
     procedure damage();
     procedure teleport(var x, y: ShortInt);
     procedure complete_card_selection(x: integer);
-    procedure outputBattleResut(opp_suit_num, opp_value, battle_result: integer);
+    procedure outputBattleResut(battle_result: integer);
 
     // 有回傳值的自訂函式
     function GetIPFromHost(var HostName, IPaddr, WSAErr: string): Boolean;
-    function getWinner(s_type, s: string): string;
+    function getWinner(s: string): string;
     function getAvailableLocation(): TSIArray;
     procedure DEBUG_btnClick(Sender: TObject);
 
@@ -226,9 +226,9 @@ procedure TForm1.DEBUG_btnClick(Sender: TObject);
 begin
   DEBUG := not DEBUG;
   if (DEBUG) then
-    memo1.Lines.add('DEBUG mode: 啟用')
+    memo1.Lines.add('/ DEBUG mode: 啟用 /')
   else
-    memo1.Lines.add('DEBUG mode: 關閉');
+    memo1.Lines.add('/ DEBUG mode: 關閉 /');
 end;
 
 
@@ -462,8 +462,6 @@ begin
     i := i + 2;
   end;
   
-
-
   Dir := Dir or 16;
   can_move := true;
   // > 如果可以移動，就改變座標 <
@@ -545,7 +543,7 @@ begin
 
       while i <= (Length(con_IP)-1) do
       begin
-        UDPC.Host := con_IP[i];
+        if (con_IP[i] <> '-1') then UDPC.Host := con_IP[i];
         UDPC.Port := 8787; 
         UDPC.Send('L' + inttostr(con_num) + 'X' + inttostr(LX) + 'Y' + inttostr(LY));
         i := i+1;
@@ -642,11 +640,12 @@ end;
 // 檢查是否有遇到人
 procedure TForm1.collectionCheck(mode: integer);
 var
-  i, k: integer;
+  i, k, player_count: integer;
 begin
-  for i := 0 to (length(con_IP)-1) do
+  player_count := (length(con_loc) div 2); // 目前伺服器內總人數
+  for i := 0 to (player_count - 1) do
   begin
-    if (con_loc[i] = LX) and (con_loc[i+1] = LY) and (i <> con_num) then
+    if (con_loc[i*2] = LX) and (con_loc[i*2 + 1] = LY) and (i <> con_num) then
     begin
       Button1.Enabled := false;
       Button2.Enabled := false;
@@ -681,11 +680,11 @@ begin
             k := 1;
             while k <= (Length(con_IP)-1) do
             begin
-              if (k <> opp_num) then
+              if (k <> opp_num) and (con_IP[k] <> '-1') then
               begin
                 UDPC.Host := con_IP[k];
                 UDPC.Port := 8787; 
-                UDPC.Send('L0' + 'O' + inttostr(opp_num));
+                UDPC.Send('A0' + 'O' + inttostr(opp_num));
               end;
               k := k+1;
             end;
@@ -721,13 +720,23 @@ procedure TForm1.complete_card_selection(x: integer);
 var
   i: integer;
 begin
+  // 1. 關閉出牌按鈕
+  for i:=0 to 3 do
+  begin
+    if i <> (x-1) then CD[i].ShowDeck := true;
+    Button_showcard1.Visible := false;
+    Button_showcard2.Visible := false;
+    Button_showcard3.Visible := false;
+    Button_showcard4.Visible := false;
+  end;
+  
   {
     Tcardsuit(0) : 黑桃
     Tcardsuit(1) : 方塊
     Tcardsuit(2) : 梅花
     Tcardsuit(3) : 紅心
   }
-  // 1. 把牌存進 my_value 和 my_suit_num
+  // 2. 把牌存進 my_value 和 my_suit_num
   my_value := CD[x-1].value;
   if (CD[x-1].Suit = Tcardsuit(2)) then begin
     my_suit_num := 1; end
@@ -738,18 +747,18 @@ begin
   else if (CD[x-1].suit = Tcardsuit(0)) then begin 
     my_suit_num := 4; end;
 
-  // 2. 輸出自己出的牌
-  memo1.Lines.add('你出了...');
+  // 3. 輸出自己出的牌
+  memo1.Lines.add('> 你出了...');
   case my_suit_num of
-    1: memo1.Lines.add('梅花 ' + inttostr(my_value));
-    2: memo1.Lines.add('方塊 ' + inttostr(my_value));
-    3: memo1.Lines.add('紅心 ' + inttostr(my_value));
-    4: memo1.Lines.add('黑桃 ' + inttostr(my_value));
+    1: memo1.Lines.add('[ 梅花 ' + inttostr(my_value) + ' ]');
+    2: memo1.Lines.add('[ 方塊 ' + inttostr(my_value) + ' ]');
+    3: memo1.Lines.add('[ 紅心 ' + inttostr(my_value) + ' ]');
+    4: memo1.Lines.add('[ 黑桃 ' + inttostr(my_value) + ' ]');
   end;
 
-  // 3. 確認對方是否已出牌
+  // 4. 確認對方是否已出牌
   if opp_card_string = '' then
-  // >>> 對方未出：傳自己的牌過去
+  // 4-1. 對方未出：傳自己的牌過去
   begin
     memo1.Lines.add('（正在等待對手出牌...）');
 
@@ -770,7 +779,7 @@ begin
     end;
   end
   
-  // >>> 對方已出：比較結果，並傳送結果
+  // 4-2. 對方已出：比較結果，並傳送結果
   else begin 
     memo1.Lines.add('（對手已經出牌了！）');
 
@@ -779,24 +788,26 @@ begin
     case con_mode of
       1: // Client
       begin
-        UDPC.send('R' + getWinner('P', opp_card_string) + 'O' + inttostr(opp_num) + 'S' + inttostr(my_suit_num) + 'V' + inttostr(my_value)); //寄給server轉發
+        UDPC.send('R' + getWinner(opp_card_string) + 'O' + inttostr(opp_num) + 'S' + inttostr(my_suit_num) + 'V' + inttostr(my_value)); //寄給server轉發
         UDPC.send('F' + inttostr(con_num) + 'O' + inttostr(opp_num));
       end;
 
       2: // Server
       begin
-        
         UDPC.Host := con_IP[opp_num];
         UDPC.Port := 8787; 
-        UDPC.send('R' + getWinner('P', opp_card_string) + 'O' + inttostr(opp_num) + 'S' + inttostr(my_suit_num) + 'V' + inttostr(my_value)); //寄給server轉發
+        UDPC.send('R' + getWinner(opp_card_string) + 'O' + inttostr(opp_num) + 'S' + inttostr(my_suit_num) + 'V' + inttostr(my_value)); //寄給server轉發
         
         // 廣播傳送結束對戰訊息
-        i := 0;
+        i := 1;
         while i < Length(con_IP) do
         begin
-          if i <> opp_num then
+          if (i <> opp_num) and (con_IP[i] <> '-1') then
+          begin
+            UDPC.Host := con_IP[i];
             UDPC.send('F0' + 'O' + inttostr(opp_num));
-          
+          end;
+
           i := i + 1;
         end;
       end;
@@ -804,7 +815,7 @@ begin
   end;
 end;
 
-function TForm1.getWinner(s_type, s: string): string;
+function TForm1.getWinner(s: string): string;
 var
   winner_num: ShortInt;
   // 解析資料用
@@ -814,37 +825,39 @@ begin
   // 解析資料
   temp := TStringList.Create;
   s_p := PChar(opp_card_string);
-
-  if (s_type = 'P') then
-    begin ExtractStrings(['P', 'O', 'S', 'V'], [], s_p, temp); end
-  else
-  if (s_type = 'R') then
-    begin ExtractStrings(['R', 'O', 'S', 'V'], [], s_p, temp); end;
+  ExtractStrings(['P', 'O', 'S', 'V'], [], s_p, temp);
   opp_suit_num := strtoint(temp[2]);
   opp_value := strtoint(temp[3]);
 
-  // 判斷贏家
+  // 判斷贏家：先比牌值
   winner_num := -1;
   if (my_value > opp_value) then
   begin
     winner_num := con_num;
-    outputBattleResut(opp_suit_num, opp_value, 1);
+    outputBattleResut(1); // 贏
   end
-  else if (my_value > opp_value) then
+  else if (my_value < opp_value) then
   begin
     winner_num := opp_num;
-    outputBattleResut(opp_suit_num, opp_value, 0);
+    outputBattleResut(0); // 輸
   end
   else if (my_value = opp_value) then
   begin
+    // 牌值相同，再比花色
     if (my_suit_num > opp_suit_num) then
     begin
       winner_num := con_num;
-      outputBattleResut(opp_suit_num, opp_value, 1);
-    end else
+      outputBattleResut(1); // 贏
+    end
+    else if (my_suit_num < opp_suit_num) then
     begin
       winner_num := opp_num;
-      outputBattleResut(opp_suit_num, opp_value, 0);
+      outputBattleResut(0); // 輸
+    end
+    else
+    begin
+      winner_num := -1;
+      outputBattleResut(-1); // 平手
     end;
   end;
 
@@ -853,7 +866,7 @@ begin
   temp.free;
 end;
 
-procedure TForm1.outputBattleResut(opp_suit_num, opp_value, battle_result: integer);
+procedure TForm1.outputBattleResut(battle_result: integer);
 var
   new_loc: TSIArray;
 begin
@@ -880,7 +893,17 @@ begin
     setlength(new_loc, 2);
     new_loc := getAvailableLocation();
     teleport(new_loc[0], new_loc[1]);
+  end else
+  if (battle_result = -1) then
+  begin
+    memo1.Lines.add('你們平手，雙方都受到了傷害');
+    damage();
   end;
+
+  opp_card_string := '';
+  Button1.Enabled := true;
+  Button2.Enabled := true;
+  Button3.Enabled := true;
 end;
 
 // 扣血
@@ -911,11 +934,32 @@ end;
 
 // 傳送到指定的位置
 procedure TForm1.teleport(var x, y: ShortInt);
+var i: ShortInt;
 begin
   LX := x;
   LY := y;
   con_loc[con_num*2] := LX;
   con_loc[con_num*2 + 1] := LY;
+
+  // Client
+  if con_mode = 1 then
+  begin
+    UDPC.send('L' + inttostr(con_num) + 'X' + inttostr(LX) + 'Y' + inttostr(LY));
+  end
+  
+  // Server
+  else if con_mode = 2 then
+  begin
+    i := 1;
+    while i < length(con_IP) do
+    begin
+      UDPC.Host := con_IP[con_num];
+      UDPC.Port := 8787;
+      UDPC.send('L' + inttostr(con_num) + 'X' + inttostr(LX) + 'Y' + inttostr(LY));
+
+      i := i + 1;
+    end;
+  end;
 
   memo1.Lines.add('你已經傳送到 (' + inttostr(x) + ', ' + inttostr(y) + ')。');
   updateFrame();
@@ -1024,6 +1068,7 @@ begin
   Button5.Enabled := false;
   ComboBox1.Enabled := false;
   opp_card_string := '';
+  opp_num := -1;
   
   // 判斷連線模式
   // 連線模式為：
@@ -1190,7 +1235,7 @@ var
   len, i: integer;
 
   // 得到玩家新位置用
-  X, Y, num, opp_num: ShortInt;
+  X, Y, num, opp_num, move_num: ShortInt;
   newLoc: TSIArray;
 
   // 把字串分割用
@@ -1201,7 +1246,7 @@ begin
   len := AData.Size;
   setlength(s, len);
   Adata.Read(s[1], len);
-  if (DEBUG) then memo1.Lines.add('UDPS> ' + s); // DEBUG
+  if (DEBUG) then memo1.Lines.add('[UDPS] ' + s); // DEBUG
 
   // > 解析資料 <
   // 1) Client & Server: 接收地圖更新 L[玩家編號]X[座標]Y[座標]
@@ -1211,16 +1256,16 @@ begin
     temp := TStringList.Create;
     s_p := PChar(s);
     ExtractStrings(['L', 'X', 'Y'], [], s_p, temp);
-    num := strtoint(temp[0]); //送出移動訊號的玩家編號
+    move_num := strtoint(temp[0]); //送出移動訊號的玩家編號
     X := strtoint(temp[1]);   //新的X值
     Y := strtoint(temp[2]);   //新的Y值
     temp.free;
 
     // (更新自己的con_loc[][])
-    if (length(con_loc) < (num+1)*2) then
-      setlength(con_loc, (num+1)*2);
-    con_loc[num*2] := X;
-    con_loc[num*2 + 1] := Y;
+    if length(con_loc) < ((move_num+1)*2) then
+      setlength(con_loc, (move_num+1)*2);
+    con_loc[move_num*2] := X;
+    con_loc[move_num*2 + 1] := Y;
 
     //更新畫面
     updateFrame();
@@ -1232,28 +1277,24 @@ begin
     if con_mode = 2 then
     begin
       i := 1;
-      while i <= (Length(con_IP)-1) do
+      while i < Length(con_IP) do
       begin
-        if i = num then
+        if (i <> move_num) and (con_IP[i] <> '-1') then
         begin
-          i := i+1;
-          continue;
-        end
-        else begin
           UDPC.Host := con_IP[i];
           UDPC.Port := 8787; 
           UDPC.Send(s);
-          i := i+1;
         end;
+        i := i+1;
       end; 
     end;
   end
 
-  // 2) Client & Server: 接收 玩家離開連線 'D[編號]' TODO: 小地圖不會把已退出的玩家移除
+  // 2) Client & Server: 接收 玩家離開連線 'D[編號]'
   else if copy(s, 1, 1) = 'D' then
   begin
     // 把地圖擦掉
-    num := strtoint(copy(s, 2, 10000));
+    num := strtoint(copy(s, 2, 10));
     con_loc[num*2] := -1;
     con_loc[num*2 + 1] := -1;
 
@@ -1265,44 +1306,46 @@ begin
       con_IP[num] := '-1'; // 只有Server會存大家的IP
 
       i := 1;
-      while i <= (Length(con_IP)-1) do
+      while i < Length(con_IP) do
       begin
-        if i = num then
+        if (i <> num) and (con_IP[i] <> '-1') then
         begin
-          i := i+1;
-          continue;
-        end
-        else begin
           UDPC.Host := con_IP[i];
           UDPC.Port := 8787; 
           UDPC.Send(s);
-          i := i+1;
         end;
+        i := i + 1;
       end; 
     end;
   end
   
-  // 3) Client & Server: 接收 出牌結果
+  // 3) Client & Server: （慢出的人）接收 出牌結果 'P[出牌者編號]O[收件人編號]S[花色編號]V[牌值]'
   else if copy(s, 1, 1) = 'P' then
   begin
     // 如果是Client：存結果進opp_card_string內
     if con_mode = 1 then
     begin
       opp_card_string := s;
+      memo1.Lines.add('（對手已經出牌了！）');
     end
+
     // 如果是Server：確認收件人（是否寄給自己）、轉寄
     else if con_mode = 2 then
     begin
-      // 初步拆解資料
+      // 解析資料
       temp := TStringList.Create;
       s_p := PChar(s);
       ExtractStrings(['P', 'O', 'S', 'V'], [], s_p, temp);
 
       // 確認是否寄給自己
-      if (strtoint(temp[1]) = 0) then begin
-        opp_card_string := s; end
+      if (temp[1] = '0') then
+      begin
+        opp_card_string := s; //寄給自己
+        memo1.Lines.add('（對手已經出牌了！）');
+      end
       else begin
-        UDPC.Host := con_IP[1];
+        // 轉送給收件人
+        UDPC.Host := con_IP[strtoint(temp[1])];
         UDPC.Port := 8787;
         UDPC.send(s);
       end;
@@ -1311,39 +1354,54 @@ begin
     end;
   end
 
-  // 4) Client & Server: (先出的人) 接收贏家 'R[贏家編號]O[收件人編號]S[自己的花色編號]V[自己的牌值]'
+  // 4) Client & Server: (先出的人) 接收 贏家 'R[贏家編號]O[收件人編號]S[自己的花色編號]V[自己的牌值]'
   else if copy(s, 1, 1) = 'R' then
   begin
-    // 如果是Client：存結果進opp_card_string內
+    // 拆解資料
+    temp := TStringList.Create;
+    s_p := PChar(s);
+    ExtractStrings(['R', 'O', 'S', 'V'], [], s_p, temp);
+
+    // Client 直接拿R值output結果
     if con_mode = 1 then
     begin
-      getWinner('R', s);
+      if temp[0] = inttostr(con_num) then
+        outputBattleResut(1)  // 贏
+      else if temp[0] = '-1' then
+        outputBattleResut(-1) // 平手
+      else
+        outputBattleResut(0); // 輸
     end
-    // 如果是Server：確認收件人（是否寄給自己）、轉寄
+
+    // Server 先確認收件人（是否寄給自己）、轉寄
     else if con_mode = 2 then
     begin
-      // 初步拆解資料
-      temp := TStringList.Create;
-      s_p := PChar(s);
-      ExtractStrings(['R', 'O', 'S', 'V'], [], s_p, temp);
+      // 寄給自己
+      if (temp[1] = '0') then
+      begin
+        if temp[0] = inttostr(con_num) then
+          outputBattleResut(1)  // 贏
+        else if temp[0] = '-1' then
+          outputBattleResut(-1) // 平手
+        else
+          outputBattleResut(0); // 輸
+      end
 
-      // 確認是否寄給自己
-      if (strtoint(temp[1]) = 0) then begin
-        getWinner('R', s); end
+      // 要轉送給收件人
       else begin
-        UDPC.Host := con_IP[1];
+        UDPC.Host := con_IP[strtoint(temp[1])];
         UDPC.Port := 8787;
         UDPC.send(s);
       end;
-
-      temp.free;
     end;
+
+    temp.free;
   end
   
   // 5) Client: 接收 伺服器給的序號 'N[序號]X[傳送位置]Y[傳送位置]'
   else if copy(s, 1, 1) = 'N' then
   begin
-    // (讓檢查是否有成功連線的計時器停止)
+    // (讓計時器停止，不再檢查是否有連上)
     con_connected := true;
 
     // (得到自己的玩家編號、新的X和Y)
@@ -1356,9 +1414,9 @@ begin
     temp.free;
 
     // 把自己傳送到指定的位置
+    con_num := num;
     teleport(X, Y);
     
-    con_num := num;
     Form1.Caption := GAME_NAME + '：多人模式（Client｜已連線！ [' + inttostr(con_num) + ']）';
     Button5.Enabled := true;
   end
@@ -1375,13 +1433,15 @@ begin
     setlength(newLoc, 2);
     newLoc := getAvailableLocation();
     
+    {
     //(紀錄新人位置)
     setlength(con_loc, length(con_loc) + 2); // 重新設定con_loc陣列長度
     con_loc[length(con_loc)-2] := newLoc[0]; // X
     con_loc[length(con_loc)-1] := newLoc[1]; // Y
     updateFrame();
+    }
 
-    //(把"玩家編號"傳給新人)
+    //(把"玩家編號、位置"傳給新人)
     UDPC.Host := con_IP[num];
     UDPC.Port := 8787;
     UDPC.send('N' + inttostr(num) + 'X' + inttostr(newLoc[0]) + 'Y' + inttostr(newLoc[1]));
@@ -1395,22 +1455,15 @@ begin
     end;
 
     //(把"新人位置"傳給其他人)
-    i := 1; //server已經有存新人位置了
-    while i < num do
-    begin
-      UDPC.Host := con_IP[i];
-      UDPC.Port := 8787; 
-      UDPC.Send('L' + inttostr(num) + 'X' + inttostr(newLoc[0]) + 'Y' + inttostr(newLoc[1]));
-      i := i + 1;
-    end;
+    // 寫在 teleport() 裡面了！
 
     //DEBUG
     if (DEBUG) then
     begin
-      memo1.Lines.add('C> loc ' + inttostr(con_loc[length(con_loc)-1]) + inttostr(con_loc[length(con_loc)-2]));
-      memo1.Lines.add('C> IP ' + UDPC.Host);
-      memo1.Lines.add('C> Port ' + inttostr(UDPC.Port));
-      memo1.Lines.add('C> client_num ' + inttostr(num));
+      memo1.Lines.add('[_C] loc ' + inttostr(con_loc[length(con_loc)-1]) + inttostr(con_loc[length(con_loc)-2]));
+      memo1.Lines.add('[_C] IP ' + UDPC.Host);
+      memo1.Lines.add('[_C] Port ' + inttostr(UDPC.Port));
+      memo1.Lines.add('[_C] client_num ' + inttostr(num));
     end;
 
     memo1.Lines.add('玩家 ' + inttostr(num) + ' 已加入。');
@@ -1444,6 +1497,19 @@ begin
         end;
         
         i := i + 1;
+      end;
+    end;
+
+    if (DEBUG) then
+    begin
+      memo1.Lines.add('發生了戰鬥！');
+      memo1.Lines.add('正在戰鬥的玩家：');
+
+      i := 0;
+      while i < length(con_battling) do
+      begin
+        memo1.Lines.add(inttostr(con_battling[i]) + ' 和 ' + inttostr(con_battling[i+1]));
+        i := i + 2;
       end;
     end;
   end
@@ -1497,6 +1563,19 @@ begin
         end;
         
         i := i + 1;
+      end;
+    end;
+
+    if (DEBUG) then
+    begin
+      memo1.Lines.add('某個戰鬥結束了！');
+      memo1.Lines.add('正在戰鬥的玩家：');
+
+      i := 0;
+      while i < length(con_battling) do
+      begin
+        memo1.Lines.add(inttostr(con_battling[i]) + ' 和 ' + inttostr(con_battling[i+1]));
+        i := i + 2;
       end;
     end;
   end;
