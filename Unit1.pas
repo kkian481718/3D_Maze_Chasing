@@ -415,7 +415,7 @@ begin
   i := 0;
   while i < Length(con_loc) do
   begin
-    if (i = con_num) or (con_loc[i] = null) then
+    if (i = con_num) or (con_loc[i] = -1) then
     begin
       // 不用畫自己的位置、不用畫斷線玩家的位置
       i := i + 2;
@@ -1190,7 +1190,7 @@ var
   len, i: integer;
 
   // 得到玩家新位置用
-  X, Y, num, opp_num, count: ShortInt;
+  X, Y, num, opp_num: ShortInt;
   newLoc: TSIArray;
 
   // 把字串分割用
@@ -1254,15 +1254,16 @@ begin
   begin
     // 把地圖擦掉
     num := strtoint(copy(s, 2, 10000));
-    con_IP[num] := null;
-    con_loc[num*2] := null;
-    con_loc[num*2 + 1] := null;
+    con_loc[num*2] := -1;
+    con_loc[num*2 + 1] := -1;
 
     updateFrame();
 
     // 如果是伺服器，要協助轉發訊息
     if con_mode = 2 then
     begin
+      con_IP[num] := '-1'; // 只有Server會存大家的IP
+
       i := 1;
       while i <= (Length(con_IP)-1) do
       begin
@@ -1365,53 +1366,54 @@ begin
   // 6) Server: 接收 新連線 'C[IP]'
   else if copy(s, 1, 1) = 'C' then
   begin
-    count := length(con_IP); // 原本伺服器內人數
+    //(紀錄新人IP)
+    setlength(con_IP, length(con_IP)+1); // 重新設定con_IP陣列長度
+    num := length(con_IP)-1; // 新人編號 (=IP清單長度-1)
+    con_IP[num] := copy(s, 2, 10000);
 
-    //(紀錄新玩家IP)
-    setlength(con_IP, length(con_IP) + 1); // 重新設定con_IP陣列長度
-    con_IP[length(con_IP)-1] := copy(s, 2, 10000);
-
-    //(設定新玩家位置)
+    //(設定新人位置)
     setlength(newLoc, 2);
     newLoc := getAvailableLocation();
+    
+    //(紀錄新人位置)
     setlength(con_loc, length(con_loc) + 2); // 重新設定con_loc陣列長度
-    con_loc[length(con_loc)-2] := newLoc[0];
-    con_loc[length(con_loc)-1] := newLoc[1];
-    memo1.Lines.add('C> loc ' + inttostr(con_loc[length(con_loc)-1]) + inttostr(con_loc[length(con_loc)-2]));
+    con_loc[length(con_loc)-2] := newLoc[0]; // X
+    con_loc[length(con_loc)-1] := newLoc[1]; // Y
     updateFrame();
 
-    // 新人加入後，伺服器人數
-    count := count + 1;
-
-    //(送出玩家編號給新加入的Client)
-    UDPC.Host := copy(s, 2, 10000);
+    //(把"玩家編號"傳給新人)
+    UDPC.Host := con_IP[num];
     UDPC.Port := 8787;
-    UDPC.send('N' + inttostr(count-1) + 'X' + inttostr(newLoc[0]) + 'Y' + inttostr(newLoc[1]));
+    UDPC.send('N' + inttostr(num) + 'X' + inttostr(newLoc[0]) + 'Y' + inttostr(newLoc[1]));
     
-    //(送出所有人目前的位置給新加入的Client)
+    //(把"所有人的位置"傳給新人)
     i := 0;
-    while i < (count-2) do
+    while i < num do
     begin
       UDPC.Send('L' + inttostr(i) + 'X' + inttostr(con_loc[i*2]) + 'Y' + inttostr(con_loc[i*2 + 1]));
       i := i + 1;
     end;
 
-    //(送新人位置給前(n-1)個人)
-    i := 0;
-    while i < (count-2) do
+    //(把"新人位置"傳給其他人)
+    i := 1; //server已經有存新人位置了
+    while i < num do
     begin
       UDPC.Host := con_IP[i];
       UDPC.Port := 8787; 
-      UDPC.Send('L' + inttostr(count-1) + 'X' + inttostr(newLoc[0]) + 'Y' + inttostr(newLoc[1]));
-      i := i+1;
+      UDPC.Send('L' + inttostr(num) + 'X' + inttostr(newLoc[0]) + 'Y' + inttostr(newLoc[1]));
+      i := i + 1;
     end;
 
     //DEBUG
-    memo1.Lines.add('C> IP ' + UDPC.Host);
-    memo1.Lines.add('C> Port ' + inttostr(UDPC.Port));
-    memo1.Lines.add('C> client_num ' + inttostr(count-1));
+    if (DEBUG) then
+    begin
+      memo1.Lines.add('C> loc ' + inttostr(con_loc[length(con_loc)-1]) + inttostr(con_loc[length(con_loc)-2]));
+      memo1.Lines.add('C> IP ' + UDPC.Host);
+      memo1.Lines.add('C> Port ' + inttostr(UDPC.Port));
+      memo1.Lines.add('C> client_num ' + inttostr(num));
+    end;
 
-    memo1.Lines.add('玩家 ' + inttostr(count-1) + ' 已加入。');
+    memo1.Lines.add('玩家 ' + inttostr(num) + ' 已加入。');
   end
 
   // 7) Client & Server: 接收 戰鬥開始 'A[攻擊方]D[防守方]'
