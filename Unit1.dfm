@@ -1,11 +1,11 @@
 object Form1: TForm1
-  Left = 364
-  Top = 86
+  Left = 365
+  Top = 115
   BorderStyle = bsDialog
   Caption = 'D&D'
   ClientHeight = 613
   ClientWidth = 564
-  Color = clBtnFace
+  Color = clBackground
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
@@ -24,6 +24,12 @@ object Form1: TForm1
     Height = 13
     AutoSize = False
     Caption = 'L_LX'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWhite
+    Font.Height = -11
+    Font.Name = 'MS Sans Serif'
+    Font.Style = []
+    ParentFont = False
   end
   object L_LY: TLabel
     Left = 424
@@ -32,6 +38,12 @@ object Form1: TForm1
     Height = 13
     AutoSize = False
     Caption = 'L_LY'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWhite
+    Font.Height = -11
+    Font.Name = 'MS Sans Serif'
+    Font.Style = []
+    ParentFont = False
   end
   object L_Dir: TLabel
     Left = 496
@@ -40,6 +52,12 @@ object Form1: TForm1
     Height = 13
     AutoSize = False
     Caption = 'L_Dir'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWhite
+    Font.Height = -11
+    Font.Name = 'MS Sans Serif'
+    Font.Style = []
+    ParentFont = False
   end
   object Card1: TCard
     Left = 16
@@ -49,7 +67,7 @@ object Form1: TForm1
     Value = 1
     Suit = Hearts
     ShowDeck = True
-    DeckType = Standard1
+    DeckType = Leaves1
   end
   object Card3: TCard
     Left = 208
@@ -59,7 +77,7 @@ object Form1: TForm1
     Value = 1
     Suit = Hearts
     ShowDeck = True
-    DeckType = Standard1
+    DeckType = Leaves1
   end
   object Card4: TCard
     Left = 304
@@ -69,7 +87,7 @@ object Form1: TForm1
     Value = 1
     Suit = Hearts
     ShowDeck = True
-    DeckType = Standard1
+    DeckType = Leaves1
   end
   object Label1: TLabel
     Left = 392
@@ -78,6 +96,12 @@ object Form1: TForm1
     Height = 13
     AutoSize = False
     Caption = 'IP'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWhite
+    Font.Height = -11
+    Font.Name = 'MS Sans Serif'
+    Font.Style = []
+    ParentFont = False
     Visible = False
   end
   object Label2: TLabel
@@ -87,6 +111,14 @@ object Form1: TForm1
     Height = 13
     AutoSize = False
     Caption = 'Port'
+    Color = clBackground
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWhite
+    Font.Height = -11
+    Font.Name = 'MS Sans Serif'
+    Font.Style = []
+    ParentColor = False
+    ParentFont = False
     Visible = False
   end
   object Card2: TCard
@@ -97,7 +129,7 @@ object Form1: TForm1
     Value = 1
     Suit = Hearts
     ShowDeck = True
-    DeckType = Standard1
+    DeckType = Leaves1
   end
   object Gauge1: TGauge
     Left = 16
@@ -284,6 +316,16 @@ object Form1: TForm1
     TabOrder = 13
     Visible = False
     OnClick = Button_showcard4Click
+  end
+  object DEBUG_btn: TPanel
+    Left = 544
+    Top = 592
+    Width = 25
+    Height = 25
+    BevelOuter = bvNone
+    Color = clBackground
+    TabOrder = 15
+    OnClick = DEBUG_btnClick
   end
   object UDPC: TIdUDPClient
     Port = 0

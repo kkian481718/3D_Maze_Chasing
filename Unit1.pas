@@ -41,6 +41,7 @@ type
     Gauge1: TGauge;
     Timer_con: TTimer;
     Timer_shuffle: TTimer;
+    DEBUG_btn: TPanel;
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure ComboBox1Select(Sender: TObject);
@@ -79,6 +80,7 @@ type
     function GetIPFromHost(var HostName, IPaddr, WSAErr: string): Boolean;
     function getWinner(s_type, s: string): string;
     function getAvailableLocation(): TSIArray;
+    procedure DEBUG_btnClick(Sender: TObject);
 
   private
     { Private declarations }
@@ -151,12 +153,15 @@ var
   // 撲克牌用的變數
   CD: array[0..3] of TCard;
 
+  // DEBUG 開關
+  DEBUG: boolean;
 implementation
 
 {$R *.dfm}
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
+  DEBUG := false;
   Form1.caption := GAME_NAME;
 
   //初始化儲存線條3D用的點陣圖
@@ -214,6 +219,16 @@ begin
   //釋放3D、2D用的點陣圖
   Back_Bmap.free;
   twoD_Bmap.free;
+end;
+
+// DEBUG 開關
+procedure TForm1.DEBUG_btnClick(Sender: TObject);
+begin
+  DEBUG := not DEBUG;
+  if (DEBUG) then
+    memo1.Lines.add('DEBUG mode: 啟用')
+  else
+    memo1.Lines.add('DEBUG mode: 關閉');
 end;
 
 
@@ -1071,23 +1086,45 @@ end;
 
 procedure TForm1.disconnect();
 begin
-  Timer_con.Enabled := false;
-  ComboBox1.ItemIndex := 0;
-
   UDPC.Send('D' + inttostr(con_num));
-  
-  //初始化連線變數
-  con_mode := 0; //0:單人、1:Client、2:Server
-  setlength(con_loc, 2);
-  con_loc[0] := 1;
-  con_loc[1] := 1;
-  setlength(con_IP, 1);
-  con_num := 0;
-  con_connected := false;
-  
   UDPC.Active := false;
   UDPS.Active := false;
 
+  Timer_con.Enabled := false;
+  ComboBox1.ItemIndex := 0;
+
+  // 把出牌功能禁用
+  CD[0].ShowDeck := true;
+  CD[1].ShowDeck := true;
+  CD[2].ShowDeck := true;
+  CD[3].ShowDeck := true;
+  Button_showcard1.Visible := false;
+  Button_showcard2.Visible := false;
+  Button_showcard3.Visible := false;
+  Button_showcard4.Visible := false;
+  
+  // 開啟移動功能
+  Button1.Enabled := true;
+  Button2.Enabled := true;
+  Button3.Enabled := true;
+
+  // 初始化連線變數
+  con_mode := 0; //0:單人、1:Client、2:Server
+  setlength(con_IP, 1);
+  con_num := 0;
+  setlength(con_battling, 0);
+  con_connected := false;
+
+  // 重置血條
+  HP := 100;
+  Gauge1.Progress := HP;
+
+  // 洗白小地圖
+  setlength(con_loc, 2);
+  con_loc[0] := LX;
+  con_loc[1] := LY;
+  updateFrame();
+  
   ComboBox1.Enabled := true;
   conUISetVisible(false);
   Form1.Caption := GAME_NAME + '：單人模式';
@@ -1164,7 +1201,7 @@ begin
   len := AData.Size;
   setlength(s, len);
   Adata.Read(s[1], len);
-  memo1.Lines.add('UDPS> ' + s); // DEBUG
+  if (DEBUG) then memo1.Lines.add('UDPS> ' + s); // DEBUG
 
   // > 解析資料 <
   // 1) Client & Server: 接收地圖更新 L[玩家編號]X[座標]Y[座標]
@@ -1212,7 +1249,7 @@ begin
     end;
   end
 
-  // 2) Client & Server: 接收 玩家離開連線 'D[編號]'
+  // 2) Client & Server: 接收 玩家離開連線 'D[編號]' TODO: 小地圖不會把已退出的玩家移除
   else if copy(s, 1, 1) = 'D' then
   begin
     // 把地圖擦掉
@@ -1222,6 +1259,7 @@ begin
     con_loc[num*2 + 1] := null;
 
     updateFrame();
+
     // 如果是伺服器，要協助轉發訊息
     if con_mode = 2 then
     begin
@@ -1334,11 +1372,13 @@ begin
     con_IP[length(con_IP)-1] := copy(s, 2, 10000);
 
     //(設定新玩家位置)
-    setlength(con_loc, length(con_loc) + 2); // 重新設定con_loc陣列長度
     setlength(newLoc, 2);
     newLoc := getAvailableLocation();
-    con_loc[length(con_loc)-1] := newLoc[0];
-    con_loc[length(con_loc)-2] := newLoc[1];
+    setlength(con_loc, length(con_loc) + 2); // 重新設定con_loc陣列長度
+    con_loc[length(con_loc)-2] := newLoc[0];
+    con_loc[length(con_loc)-1] := newLoc[1];
+    memo1.Lines.add('C> loc ' + inttostr(con_loc[length(con_loc)-1]) + inttostr(con_loc[length(con_loc)-2]));
+    updateFrame();
 
     // 新人加入後，伺服器人數
     count := count + 1;
@@ -1350,29 +1390,28 @@ begin
     
     //(送出所有人目前的位置給新加入的Client)
     i := 0;
-    while i < (count-1) do
+    while i < (count-2) do
     begin
       UDPC.Send('L' + inttostr(i) + 'X' + inttostr(con_loc[i*2]) + 'Y' + inttostr(con_loc[i*2 + 1]));
       i := i + 1;
     end;
 
-    //(若有三個人以上，送新人位置給前(n-1)個人)
-    if count >= 3 then
+    //(送新人位置給前(n-1)個人)
+    i := 0;
+    while i < (count-2) do
     begin
-      i := 0;
-      while i < (count-1) do
-      begin
-        UDPC.Host := con_IP[i];
-        UDPC.Port := 8787; 
-        UDPC.Send('L' + inttostr(count-1) + 'X' + inttostr(newLoc[0]) + 'Y' + inttostr(newLoc[1]));
-        i := i+1;
-      end;
+      UDPC.Host := con_IP[i];
+      UDPC.Port := 8787; 
+      UDPC.Send('L' + inttostr(count-1) + 'X' + inttostr(newLoc[0]) + 'Y' + inttostr(newLoc[1]));
+      i := i+1;
     end;
 
     //DEBUG
     memo1.Lines.add('C> IP ' + UDPC.Host);
     memo1.Lines.add('C> Port ' + inttostr(UDPC.Port));
     memo1.Lines.add('C> client_num ' + inttostr(count-1));
+
+    memo1.Lines.add('玩家 ' + inttostr(count-1) + ' 已加入。');
   end
 
   // 7) Client & Server: 接收 戰鬥開始 'A[攻擊方]D[防守方]'
@@ -1460,7 +1499,5 @@ begin
     end;
   end;
 end;
-
-
 
 end.
