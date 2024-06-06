@@ -96,7 +96,7 @@ const
   MMW = 10; // 小地圖中每格牆壁的基本長度 miniMap_Width
   Hmax = 14; //橫向圖像數-1
   Vmax = 14; //縱向圖像數-1
-  GAME_NAME = 'D&D v0.1';
+  GAME_NAME = 'D&D v1.1';
 
 var
   Form1: TForm1;
