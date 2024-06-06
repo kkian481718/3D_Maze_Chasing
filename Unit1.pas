@@ -75,6 +75,7 @@ type
     procedure teleport(var x, y: ShortInt);
     procedure complete_card_selection(x: integer);
     procedure outputBattleResut(battle_result: integer);
+    procedure gameOver();
 
     // 有回傳值的自訂函式
     function GetIPFromHost(var HostName, IPaddr, WSAErr: string): Boolean;
@@ -302,14 +303,15 @@ begin
   Bmap.Canvas.Pen.Color := $ffffff;
 
   // 0) 畫底色
-  Bmap.Canvas.Brush.Color := $2a2a2a;
+  Bmap.Canvas.Brush.Color := $2f2f2f;
   Bmap.Canvas.Rectangle(0, 0, Bmap.Width, Bmap.Height);
 
   // 1) 4格遠、正面的牆壁?? (方形、共5個)
+  Bmap.Canvas.Brush.Color := $222222;
   for X := 0 to 4 do
     if (Dmap[X, 0] and 1) = 1 then
       Bmap.Canvas.Rectangle(X*6*LW, 12*LW, (X*6 + 6)*LW, 18*LW);
-
+  
   // 2) 3格遠、側面的牆壁? (梯形、共4個)
   Bmap.Canvas.Brush.Color := $282828;
   if (Dmap[0, 1] and 1) = 1 then
@@ -320,10 +322,11 @@ begin
     Bmap.Canvas.Polygon([Point(20*LW, 10*LW), Point(20*LW, 20*LW), Point(18*LW, 18*LW), Point(18*LW, 12*LW)]);
   if (Dmap[4, 1] and 1) = 1 then
     Bmap.Canvas.Polygon([Point(30*LW, 10*LW), Point(30*LW, 20*LW), Point(24*LW, 18*LW), Point(24*LW, 12*LW)]);
-
+  
   // 3) 3格遠、正面的牆壁 (方形、共3個)
   for X := 1 to 3 do
   begin
+    Bmap.Canvas.Brush.Color := $303030;
     if (Dmap[X, 1] and 1) = 1 then
     begin
       Bmap.Canvas.Rectangle((X-1)*10*LW, 10*LW, X*10*LW, 20*LW);
@@ -335,39 +338,42 @@ begin
   end;
 
   // 4) 2格遠、側面的牆壁 (梯形、共2個)
-  Bmap.Canvas.Brush.Color := $262626;
+  Bmap.Canvas.Brush.Color := $303030;
   if (Dmap[1, 2] and 1) = 1 then
     Bmap.Canvas.Polygon([Point(7*LW, 7*LW), Point(7*LW, 23*LW), Point(10*LW, 20*LW), Point(10*LW, 10*LW)]);
   if (Dmap[3, 2] and 1) = 1 then
     Bmap.Canvas.Polygon([Point(23*LW, 7*LW), Point(23*LW, 23*LW), Point(20*LW, 20*LW), Point(20*LW, 10*LW)]);
 
   // 5) 正面
+  Bmap.Canvas.Brush.Color := $404040;
   for X := 1 to 3 do
     if (Dmap[X, 2] and 1) = 1 then
       Bmap.Canvas.Rectangle(((X-1)*16 - 9)*LW, 7*LW, ((X-1)*16 + 7)*LW, 23*LW);
 
   // 6)
-  Bmap.Canvas.Brush.Color := $242424;
+  Bmap.Canvas.Brush.Color := $404040;
   if (Dmap[1, 3] and 1) = 1 then
     Bmap.Canvas.Polygon([Point(3*LW, 3*LW), Point(3*LW, 27*LW), Point(7*LW, 23*LW), Point(7*LW, 7*LW)]);
   if (Dmap[3, 3] and 1) = 1 then
     Bmap.Canvas.Polygon([Point(27*LW, 3*LW), Point(27*LW, 27*LW), Point(23*LW, 23*LW), Point(23*LW, 7*LW)]);
 
-  // 7) 正面
+  // 7) 正前方牆壁
+  Bmap.Canvas.Brush.Color := $505050;
   for X := 1 to 3 do
     if (Dmap[X, 3] and 1) = 1 then
       Bmap.Canvas.Rectangle(((X-1)*24 -21)*LW, 3*LW, ((X-1)*24 + 3)*LW, 27*LW);
 
-  // 8)
-  Bmap.Canvas.Brush.Color := $222222;
+  // 8) 左右邊牆壁
+  Bmap.Canvas.Brush.Color := $505050;
   if (Dmap[1, 4] and 1) = 1 then
     Bmap.Canvas.Polygon([Point(0, 0), Point(0, 30*LW), Point(3*LW, 27*LW), Point(3*LW, 3*LW)]);
   if (Dmap[3, 4] and 1) = 1 then
     Bmap.Canvas.Polygon([Point(30*LW, 0), Point(30*LW, 30*LW), Point(27*LW, 27*LW), Point(27*LW, 3*LW)]);
 
   // 9)
+  Bmap.Canvas.Brush.Color := $606060;
   Bmap.Canvas.PolyLine([Point(1, 1), Point(1, Bmap.Height-1), Point(Bmap.Width-1, Bmap.Height-1), Point(Bmap.Width-1, 1)]);
-
+  
 end;
 
 procedure TForm1.Make2D(Mx, My, Md: Byte; Bmap: TBitmap);
@@ -605,13 +611,16 @@ begin
 
       if(i <> 0) then
       begin
-        for j:=0 to i-1 do
+        j := 0;
+        while (j <= i-1) do
         begin
           if (CD[i].Value = CD[j].Value) and (CD[i].suit = CD[j].suit) then
           begin
             is_vaild_card := false;
             break;
           end;
+
+          j := j + 1;
         end;
       end;
     until is_vaild_card = true;
@@ -635,6 +644,8 @@ begin
   Button_showcard2.Visible := true;
   Button_showcard3.Visible := true;
   Button_showcard4.Visible := true;
+  Button_showcard1.Caption := '出這張';
+  Button_showcard4.Caption := '出這張';  
 end;
 
 // 檢查是否有遇到人
@@ -650,7 +661,15 @@ begin
       Button1.Enabled := false;
       Button2.Enabled := false;
       Button3.Enabled := false;
+      Button_showcard1.Visible := false;
+      Button_showcard2.Visible := false;
+      Button_showcard3.Visible := false;
+      Button_showcard4.Visible := false;
       opp_num := i;
+
+      memo1.Lines.add('');
+      memo1.Lines.add('> 發生戰鬥！ <');
+      memo1.Lines.add('');
 
       case mode of
         1: // 主動撞人
@@ -667,12 +686,13 @@ begin
           memo1.Lines.add('你逮到 ' + inttostr(opp_num) + ' 號玩家了！');
           memo1.Lines.add('你具有優勢！');
           memo1.Lines.add('快選一張數字大的牌攻擊！');
+          memo1.Lines.add('');
 
           // 發訊息給非戰鬥的人，讓他們更新自己的 con_battling
-          // A[攻擊方]O[防守方]
+          // A[攻擊方]D[防守方]
           case con_mode of
           1: // Client
-          UDPC.send('A' + inttostr(con_num) + 'O' + inttostr(opp_num));
+          UDPC.send('A' + inttostr(con_num) + 'D' + inttostr(opp_num));
           
           2: // Server
           begin
@@ -684,7 +704,7 @@ begin
               begin
                 UDPC.Host := con_IP[k];
                 UDPC.Port := 8787; 
-                UDPC.Send('A0' + 'O' + inttostr(opp_num));
+                UDPC.Send('A0' + 'D' + inttostr(opp_num));
               end;
               k := k+1;
             end;
@@ -706,6 +726,7 @@ begin
           memo1.Lines.add('你被 ' + inttostr(opp_num) + ' 號玩家伏擊了！');
           memo1.Lines.add('你處於劣勢...');
           memo1.Lines.add('快選一張數字大的牌反制！');
+          memo1.Lines.add('');
         end;
       end;
 
@@ -719,15 +740,26 @@ end;
 procedure TForm1.complete_card_selection(x: integer);
 var
   i: integer;
+  s: string;
 begin
   // 1. 關閉出牌按鈕
+  Button_showcard1.Enabled := false;
+  Button_showcard2.Enabled := false;
+  Button_showcard3.Enabled := false;
+  Button_showcard4.Enabled := false;
+  
+  // 讓一、四個按鈕文字顯示雙方出牌狀況
+  Button_showcard1.Visible := true;
+  Button_showcard1.Caption := '你的牌'; 
+  Button_showcard4.Visible := true;
+  Button_showcard4.Caption := '對方的牌';
+  Button_showcard2.Visible := false;
+  Button_showcard3.Visible := false;
+
+  // 蓋牌
   for i:=0 to 3 do
   begin
-    if i <> (x-1) then CD[i].ShowDeck := true;
-    Button_showcard1.Visible := false;
-    Button_showcard2.Visible := false;
-    Button_showcard3.Visible := false;
-    Button_showcard4.Visible := false;
+    CD[i].ShowDeck := true;
   end;
   
   {
@@ -738,29 +770,45 @@ begin
   }
   // 2. 把牌存進 my_value 和 my_suit_num
   my_value := CD[x-1].value;
-  if (CD[x-1].Suit = Tcardsuit(2)) then begin
-    my_suit_num := 1; end
-  else if (CD[x-1].suit = Tcardsuit(1)) then begin 
-    my_suit_num := 2; end
-  else if (CD[x-1].suit = Tcardsuit(3)) then begin 
-    my_suit_num := 3; end
-  else if (CD[x-1].suit = Tcardsuit(0)) then begin 
-    my_suit_num := 4; end;
+  
+  if (CD[x-1].Suit = Tcardsuit(2)) then
+  begin
+    my_suit_num := 1;
+    CD[0].Suit := Tcardsuit(2);
+  end
+  else if (CD[x-1].suit = Tcardsuit(1)) then
+  begin 
+    my_suit_num := 2;
+    CD[0].Suit := Tcardsuit(1);
+  end
+  else if (CD[x-1].suit = Tcardsuit(3)) then
+  begin 
+    my_suit_num := 3;
+    CD[0].Suit := Tcardsuit(3);
+  end
+  else if (CD[x-1].suit = Tcardsuit(0)) then
+  begin 
+    my_suit_num := 4;
+    CD[0].Suit := Tcardsuit(0);
+  end;
 
   // 3. 輸出自己出的牌
-  memo1.Lines.add('> 你出了...');
+  s := '> 你出了 ';
   case my_suit_num of
-    1: memo1.Lines.add('[ 梅花 ' + inttostr(my_value) + ' ]');
-    2: memo1.Lines.add('[ 方塊 ' + inttostr(my_value) + ' ]');
-    3: memo1.Lines.add('[ 紅心 ' + inttostr(my_value) + ' ]');
-    4: memo1.Lines.add('[ 黑桃 ' + inttostr(my_value) + ' ]');
+    1: s := s + '[ 梅花 ' + inttostr(my_value) + ' ]';
+    2: s := s + '[ 方塊 ' + inttostr(my_value) + ' ]';
+    3: s := s + '[ 紅心 ' + inttostr(my_value) + ' ]';
+    4: s := s + '[ 黑桃 ' + inttostr(my_value) + ' ]';
   end;
+  memo1.Lines.add(s);
+  CD[0].value := my_value; // 讓第一張牌顯示自己的值
+  CD[0].ShowDeck := false;
 
   // 4. 確認對方是否已出牌
   if opp_card_string = '' then
   // 4-1. 對方未出：傳自己的牌過去
   begin
-    memo1.Lines.add('（正在等待對手出牌...）');
+    memo1.Lines.add('> 正在等待對手出牌...');
 
     // 送出 P[自己的序號]O[對方的編號]S[自己的花色編號]V[自己的牌值]
     case con_mode of
@@ -781,8 +829,6 @@ begin
   
   // 4-2. 對方已出：比較結果，並傳送結果
   else begin 
-    memo1.Lines.add('（對手已經出牌了！）');
-
     // 傳 R[贏家編號]O[收件人編號]S[自己的花色編號]V[自己的牌值] 給對手
     // 廣播 F[攻擊方]O[防守方] 表示結束對戰
     case con_mode of
@@ -869,34 +915,59 @@ end;
 procedure TForm1.outputBattleResut(battle_result: integer);
 var
   new_loc: TSIArray;
+  s: string;
 begin
-  // 輸出對手出的牌
-  memo1.Lines.add('對手出了...');
+  s := '> 對手出了 ';
   case opp_suit_num of
-    1: memo1.Lines.add('梅花 ' + inttostr(opp_value));
-    2: memo1.Lines.add('方塊 ' + inttostr(opp_value));
-    3: memo1.Lines.add('紅心 ' + inttostr(opp_value));
-    4: memo1.Lines.add('黑桃 ' + inttostr(opp_value));
+    1: begin
+      s := s + '[ 梅花 ' + inttostr(opp_value) + ' ]';
+      CD[3].Suit := Tcardsuit(2);
+    end;
+
+    2: begin
+      s := s + '[ 方塊 ' + inttostr(opp_value) + ' ]';
+      CD[3].Suit := Tcardsuit(1);
+    end;
+
+    3: begin
+      s := s + '[ 紅心 ' + inttostr(opp_value) + ' ]';
+      CD[3].Suit := Tcardsuit(3);
+    end;
+
+    4: begin
+      s := s + '[ 黑桃 ' + inttostr(opp_value) + ' ]';
+      CD[3].Suit := Tcardsuit(0);
+    end;
   end;
+  memo1.Lines.add(s);
+  CD[3].value := opp_value;
+  CD[3].ShowDeck := false;
 
   // 輸出贏家
-  memo1.Lines.add('------ 結果 -------');
+  memo1.Lines.add('－－－－－－－－－－－－');
+  s := '> 對戰結果：';
   if (battle_result = 0) then
   begin
-    memo1.Lines.add('你輸了...');
+    s := s + ' 你輸了...';
+    memo1.Lines.add(s);
     damage();
   end else
   if (battle_result = 1) then
   begin
-    memo1.Lines.add('你贏了！');
-    memo1.Lines.add('你毫髮無傷地逃脫了戰鬥！');
+    s := s + ' 你贏了！';
+    memo1.Lines.add(s);
+    memo1.Lines.add('');
+    memo1.Lines.add('（你脫離了戰鬥！）');
+    memo1.Lines.add('');
+
     setlength(new_loc, 2);
     new_loc := getAvailableLocation();
     teleport(new_loc[0], new_loc[1]);
   end else
   if (battle_result = -1) then
   begin
-    memo1.Lines.add('你們平手，雙方都受到了傷害');
+    s := s + ' 平手';
+    memo1.Lines.add(s);
     damage();
   end;
 
@@ -917,15 +988,16 @@ begin
   if (HP < 0) then HP := 0;
   Gauge1.Progress := HP;
 
-  memo1.Lines.add('你受到了 ' + inttostr(HPdamage) + ' 點的傷害...');
-  memo1.Lines.add('你剩下 ' + inttostr(HP) + ' 點生命值...');
+  memo1.Lines.add('');
+  memo1.Lines.add('（受到 ' + inttostr(HPdamage) + ' 點傷害）');
 
   if (HP = 0) then
   begin
-    // 臭嘴程式要放在這裡
+    gameOver();
   end
   else begin
-    memo1.Lines.add('你狼狽地脫離了戰鬥...');
+    memo1.Lines.add('（你狼狽地脫離了戰鬥...）');
+    memo1.Lines.add('');
     setlength(new_loc, 2);
     new_loc := getAvailableLocation();
     teleport(new_loc[0], new_loc[1]);
@@ -1004,8 +1076,13 @@ begin
   Result := new_XY;
 end;
 
-
-
+procedure TForm1.gameOver();
+begin
+  // 臭嘴程式要放在這裡
+  memo1.Lines.add('（你已失去全部血量）');
+  memo1.Lines.add('（已與伺服器斷開連線）');
+  disconnect();
+end;
 // ----------------------------------------------------------------
 // 連線設定
 // ----------------------------------------------------------------
@@ -1326,7 +1403,7 @@ begin
     if con_mode = 1 then
     begin
       opp_card_string := s;
-      memo1.Lines.add('（對手已經出牌了！）');
+      memo1.Lines.add('> 對手已出牌！');
     end
 
     // 如果是Server：確認收件人（是否寄給自己）、轉寄
@@ -1341,7 +1418,7 @@ begin
       if (temp[1] = '0') then
       begin
         opp_card_string := s; //寄給自己
-        memo1.Lines.add('（對手已經出牌了！）');
+        memo1.Lines.add('> 對手已出牌！');
       end
       else begin
         // 轉送給收件人
@@ -1361,6 +1438,9 @@ begin
     temp := TStringList.Create;
     s_p := PChar(s);
     ExtractStrings(['R', 'O', 'S', 'V'], [], s_p, temp);
+
+    opp_suit_num := strtoint(temp[2]);
+    opp_value := strtoint(temp[3]);
 
     // Client 直接拿R值output結果
     if con_mode = 1 then

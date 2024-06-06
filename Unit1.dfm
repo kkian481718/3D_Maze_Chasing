@@ -1,10 +1,10 @@
 object Form1: TForm1
-  Left = 365
-  Top = 115
+  Left = 497
+  Top = 118
   BorderStyle = bsDialog
   Caption = 'D&D'
   ClientHeight = 613
-  ClientWidth = 564
+  ClientWidth = 563
   Color = clBackground
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -138,7 +138,7 @@ object Form1: TForm1
     Height = 17
     BackColor = clBtnShadow
     Color = clWhite
-    ForeColor = clSilver
+    ForeColor = clRed
     Font.Charset = ANSI_CHARSET
     Font.Color = clBlack
     Font.Height = -13
@@ -287,6 +287,7 @@ object Form1: TForm1
     Caption = #20986#36889#24373
     TabOrder = 14
     Visible = False
+    OnClick = Button_showcard1Click
   end
   object Memo1: TMemo
     Left = 392
